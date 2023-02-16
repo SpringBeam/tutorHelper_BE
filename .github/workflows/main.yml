@@ -25,6 +25,19 @@ jobs:
         run: chmod +x ./gradlew
         shell: bash
         
+      - name: Write multiple values to application.properties file
+        uses: GuillaumeFalourd/write-java-properties-file@v1
+        with:
+          file_path: ./src/main/resources/application.properties
+          property: |
+            spring.datasource.url
+            spring.datasource.username
+            spring.datasource.password
+          value: |
+            $ {{ secrets.RDS_URL }}
+            $ {{ secrets.RDS_USERNAME }}
+            $ {{ secrets.RDS_PASSWORD }}
+      
       - name: Build with Gradle
         run: ./gradlew build
         shell: bash
