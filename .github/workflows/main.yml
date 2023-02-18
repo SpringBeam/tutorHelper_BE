@@ -34,9 +34,9 @@ jobs:
             spring.datasource.username
             spring.datasource.password
           value: |
-            $ {{ secrets.RDS_URL }}
-            $ {{ secrets.RDS_USERNAME }}
-            $ {{ secrets.RDS_PASSWORD }}
+            ${{ secrets.RDS_URL }}
+            ${{ secrets.RDS_USERNAME }}
+            ${{ secrets.RDS_PASSWORD }}
       
       - name: Build with Gradle
         run: ./gradlew build
