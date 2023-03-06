@@ -21,15 +21,14 @@ public class ReviewService {
     private final NoteRepository noteRepository;
     private final TagRepository tagRepository;
 
-    // 새로운 복습 항목 등록
+    /* 복습항목 추가 */
     public String createReview(CreateReviewDTO createReviewDTO) {
 
         Optional<Tutoring> tutoring = tutoringRepository.findById(createReviewDTO.getTutoringId());
-        Optional<Note> note = noteRepository.findById(1L); // 임시 => tutoring의 최근일지로 찾아오기
+        Optional<Note> note = noteRepository.findById(1L); // 임시 => tutoring 의 최근일지로 찾아오기
         Optional<Tag> tag = tagRepository.findById(createReviewDTO.getTagId());
 
         if (tutoring.isPresent() && note.isPresent() && tag.isPresent()) {
-            // tutoring, note, tag 모두 올바르게 존재하면
             Review review = Review.builder()
                     .body(createReviewDTO.getBody())
                     .isCompleted(false)
@@ -43,39 +42,53 @@ public class ReviewService {
         return "FAIL";
     }
 
+    /* 복습항목 수정 */
+    public String updateReview(Long reviewId, CreateReviewDTO updatedReview) {
+
+        Optional<Review> review = reviewRepository.findById(reviewId);
+
+        if (review.isPresent()) {
+            Review r = review.get();
+
+            if (updatedReview.getBody() != null) {
+                r.setBody(updatedReview.getBody());
+            }
+            if (updatedReview.getTagId() != null) {
+                Optional<Tag> tag = tagRepository.findById(updatedReview.getTagId());
+                tag.ifPresent(r::setTag);
+            }
+
+            reviewRepository.save(r);
+            return "SUCCESS";
+        }
+
+        return "FAIL";
+    }
+
+    /* 복습항목 삭제 */
+    public String deleteReview(Long reviewId){
+        reviewRepository.deleteById(reviewId);
+        return "SUCCESS";
+    }
+
+    /* 복습항목 완료여부 체크 */
+    public String checkReview(Long reviewId, Boolean isCompleted) {
+        Optional<Review> review = reviewRepository.findById(reviewId);
+        if (review.isPresent()) {
+            Review r = review.get();
+            r.setIsCompleted(isCompleted);
+            reviewRepository.save(r);
+            return "SUCCESS";
+        }
+        return "FAIL";
+    }
+
+    /* 복습내역 불러오기 */
     public List<Review> reviewList(Long tutoringId) {
         List<Review> reviewList = reviewRepository.findAll();
         System.out.println(reviewList);
 //        List<Review> reviews = reviewRepository
+        System.out.println(tutoringId);
         return reviewList;
-    }
-
-    public void deleteReview(Long reviewId){
-        reviewRepository.deleteById(reviewId);
-    }
-
-    public void updateReview(Long reviewId, CreateReviewDTO updatedReview) {
-
-        Optional<Review> review = reviewRepository.findById(reviewId);
-        Review r = review.get();
-
-        if (updatedReview.getBody() != null) {
-            r.setBody(updatedReview.getBody());
-        }
-        if (updatedReview.getTagId() != null) {
-            Optional<Tag> tag = tagRepository.findById(updatedReview.getTagId());
-            if (tag.isPresent()) {
-                r.setTag(tag.get());
-            }
-        }
-
-        reviewRepository.save(r);
-    }
-
-    public void checkReview(Long reviewId, Boolean isCompleted) {
-        Optional<Review> review = reviewRepository.findById(reviewId);
-        Review r = review.get();
-        r.setIsCompleted(isCompleted);
-        reviewRepository.save(r);
     }
 }

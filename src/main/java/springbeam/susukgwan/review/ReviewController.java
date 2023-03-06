@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import springbeam.susukgwan.ResponseCode;
 import springbeam.susukgwan.review.dto.CreateReviewDTO;
 
 import java.util.List;
@@ -15,12 +16,47 @@ public class ReviewController {
     private final ReviewService reviewService;
 
     @PostMapping("")
-    public ResponseEntity createReview (@RequestBody CreateReviewDTO createReviewDTO){
+    public ResponseEntity<ResponseCode> createReview (@RequestBody CreateReviewDTO createReviewDTO){
         String code = reviewService.createReview(createReviewDTO);
-        if (code == "SUCCESS") {
-            return new ResponseEntity("Create Review SUCCESS", HttpStatus.CREATED);
+        ResponseCode responseCode = ResponseCode.builder().code(code).build();
+        if (code.equals("SUCCESS")) {
+            return new ResponseEntity<>(responseCode, HttpStatus.CREATED);
         } else {
-            return new ResponseEntity("[ERROR] Create Review FAIL", HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(responseCode, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+
+    @PutMapping("/{reviewId}")
+    public ResponseEntity<ResponseCode> updateReview (@PathVariable("reviewId") Long reviewId, @RequestBody CreateReviewDTO updatedReview) {
+        String code = reviewService.updateReview(reviewId, updatedReview);
+        ResponseCode responseCode = ResponseCode.builder().code(code).build();
+        if (code.equals("SUCCESS")) {
+            return new ResponseEntity<>(responseCode, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(responseCode, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @DeleteMapping("/{reviewId}")
+    public ResponseEntity<ResponseCode> deleteReview (@PathVariable("reviewId") Long reviewId) {
+        String code = reviewService.deleteReview(reviewId);
+        ResponseCode responseCode = ResponseCode.builder().code(code).build();
+        if (code.equals("SUCCESS")) {
+            return new ResponseEntity<>(responseCode, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(responseCode, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @PostMapping("/{reviewId}/check")
+    public ResponseEntity<ResponseCode> checkReview (@PathVariable("reviewId") Long reviewId, @RequestBody Review review) {
+        String code = reviewService.checkReview(reviewId, review.getIsCompleted());
+        ResponseCode responseCode = ResponseCode.builder().code(code).build();
+        if (code.equals("SUCCESS")) {
+            return new ResponseEntity<>(responseCode, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(responseCode, HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -28,23 +64,5 @@ public class ReviewController {
     public List<Review> getReview (@PathVariable("tutoringId") Long tutoringId){
         System.out.println(tutoringId);
         return reviewService.reviewList(tutoringId);
-    }
-
-    @DeleteMapping("/{reviewId}")
-    public ResponseEntity deleteReview (@PathVariable("reviewId") Long reviewId) {
-        reviewService.deleteReview(reviewId);
-        return new ResponseEntity("Delete Review SUCCESS", HttpStatus.OK);
-    }
-
-    @PutMapping("/{reviewId}")
-    public ResponseEntity updateReview (@PathVariable("reviewId") Long reviewId, @RequestBody CreateReviewDTO updatedReview) {
-        reviewService.updateReview(reviewId, updatedReview);
-        return new ResponseEntity("Update Review SUCCESS", HttpStatus.OK);
-    }
-
-    @PostMapping("/{reviewId}/check")
-    public ResponseEntity checkReview (@PathVariable("reviewId") Long reviewId, @RequestBody Review review) {
-        reviewService.checkReview(reviewId, review.getIsCompleted());
-        return new ResponseEntity("Check Review SUCCESS", HttpStatus.OK);
     }
 }
