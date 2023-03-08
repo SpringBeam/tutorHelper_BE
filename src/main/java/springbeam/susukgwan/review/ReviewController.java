@@ -5,7 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import springbeam.susukgwan.ResponseCode;
-import springbeam.susukgwan.review.dto.CreateReviewDTO;
+import springbeam.susukgwan.review.dto.ReviewDTO;
 
 import java.util.List;
 
@@ -16,8 +16,8 @@ public class ReviewController {
     private final ReviewService reviewService;
 
     @PostMapping("")
-    public ResponseEntity<ResponseCode> createReview (@RequestBody CreateReviewDTO createReviewDTO){
-        String code = reviewService.createReview(createReviewDTO);
+    public ResponseEntity<ResponseCode> createReview (@RequestBody ReviewDTO createReview){
+        String code = reviewService.createReview(createReview);
         ResponseCode responseCode = ResponseCode.builder().code(code).build();
         if (code.equals("SUCCESS")) {
             return new ResponseEntity<>(responseCode, HttpStatus.CREATED);
@@ -28,7 +28,7 @@ public class ReviewController {
 
 
     @PutMapping("/{reviewId}")
-    public ResponseEntity<ResponseCode> updateReview (@PathVariable("reviewId") Long reviewId, @RequestBody CreateReviewDTO updatedReview) {
+    public ResponseEntity<ResponseCode> updateReview (@PathVariable("reviewId") Long reviewId, @RequestBody ReviewDTO updatedReview) {
         String code = reviewService.updateReview(reviewId, updatedReview);
         ResponseCode responseCode = ResponseCode.builder().code(code).build();
         if (code.equals("SUCCESS")) {
@@ -50,7 +50,7 @@ public class ReviewController {
     }
 
     @PostMapping("/{reviewId}/check")
-    public ResponseEntity<ResponseCode> checkReview (@PathVariable("reviewId") Long reviewId, @RequestBody Review review) {
+    public ResponseEntity<ResponseCode> checkReview (@PathVariable("reviewId") Long reviewId, @RequestBody ReviewDTO review) {
         String code = reviewService.checkReview(reviewId, review.getIsCompleted());
         ResponseCode responseCode = ResponseCode.builder().code(code).build();
         if (code.equals("SUCCESS")) {

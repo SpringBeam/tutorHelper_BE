@@ -7,8 +7,9 @@ import lombok.*;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class CreateReviewDTO {
+public class ReviewDTO {
     private Long tutoringId;
     private String body;
     private Long tagId;
+    private Boolean isCompleted;
 }

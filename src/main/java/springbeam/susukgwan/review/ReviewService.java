@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import springbeam.susukgwan.note.Note;
 import springbeam.susukgwan.note.NoteRepository;
-import springbeam.susukgwan.review.dto.CreateReviewDTO;
+import springbeam.susukgwan.review.dto.ReviewDTO;
 import springbeam.susukgwan.tag.Tag;
 import springbeam.susukgwan.tag.TagRepository;
 import springbeam.susukgwan.tutoring.Tutoring;
@@ -22,15 +22,15 @@ public class ReviewService {
     private final TagRepository tagRepository;
 
     /* 복습항목 추가 */
-    public String createReview(CreateReviewDTO createReviewDTO) {
+    public String createReview(ReviewDTO reviewDTO) {
 
-        Optional<Tutoring> tutoring = tutoringRepository.findById(createReviewDTO.getTutoringId());
+        Optional<Tutoring> tutoring = tutoringRepository.findById(reviewDTO.getTutoringId());
         Optional<Note> note = noteRepository.findById(1L); // 임시 => tutoring 의 최근일지로 찾아오기
-        Optional<Tag> tag = tagRepository.findById(createReviewDTO.getTagId());
+        Optional<Tag> tag = tagRepository.findById(reviewDTO.getTagId());
 
         if (tutoring.isPresent() && note.isPresent() && tag.isPresent()) {
             Review review = Review.builder()
-                    .body(createReviewDTO.getBody())
+                    .body(reviewDTO.getBody())
                     .isCompleted(false)
                     .note(note.get())
                     .tag(tag.get())
@@ -43,7 +43,7 @@ public class ReviewService {
     }
 
     /* 복습항목 수정 */
-    public String updateReview(Long reviewId, CreateReviewDTO updatedReview) {
+    public String updateReview(Long reviewId, ReviewDTO updatedReview) {
 
         Optional<Review> review = reviewRepository.findById(reviewId);
 
