@@ -10,7 +10,9 @@ import springbeam.susukgwan.tag.TagRepository;
 import springbeam.susukgwan.tutoring.Tutoring;
 import springbeam.susukgwan.tutoring.TutoringRepository;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Optional;
 
 @Service
@@ -85,10 +87,19 @@ public class ReviewService {
 
     /* 복습내역 불러오기 */
     public List<Review> reviewList(Long tutoringId) {
-        List<Review> reviewList = reviewRepository.findAll();
-        System.out.println(reviewList);
-//        List<Review> reviews = reviewRepository
-        System.out.println(tutoringId);
+
+        List<Review> reviewList = new ArrayList<>(); // 복습 리스트 선언
+        Optional<Tutoring> tutoring = tutoringRepository.findById(tutoringId); // 해당 수업 가져오기
+
+        if (tutoring.isPresent()) { // 존재하는 수업이면
+            List<Note> notes = noteRepository.findByTutoring(tutoring.get()); // 그 수업에 딸린 수업일지들 가져옴
+            ListIterator<Note> noteIterator = notes.listIterator(); // 수업일지 리스트 => iterator 로 변환
+            while(noteIterator.hasNext()) { // 하나씩 돌면서
+                List<Review> reviews = reviewRepository.findByNote(noteIterator.next()); // 그 수업일지에 딸린 복습항목들 가져오기
+                reviewList.addAll(reviews); // 복습 항목들 다 붙여서 리스트 하나로 만들기
+            }
+        }
+
         return reviewList;
     }
 }

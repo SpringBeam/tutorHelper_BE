@@ -60,7 +60,7 @@ public class ReviewController {
         }
     }
 
-    @GetMapping("/{tutoringId}")
+    @GetMapping("/list/{tutoringId}")
     public List<Review> getReview (@PathVariable("tutoringId") Long tutoringId){
         System.out.println(tutoringId);
         return reviewService.reviewList(tutoringId);

@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import springbeam.susukgwan.review.Review;
+import springbeam.susukgwan.tutoring.Tutoring;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +25,11 @@ public class Note {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tutoring_id")
+    private Tutoring tutoring; // 수업
+
     @JsonIgnore
     @OneToMany(mappedBy = "note", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    private final List<Review> reviews = new ArrayList<>();
+    private final List<Review> reviews = new ArrayList<>(); // 복습
 }
