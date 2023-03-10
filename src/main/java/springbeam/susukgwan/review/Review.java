@@ -1,6 +1,5 @@
 package springbeam.susukgwan.review;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -24,12 +23,10 @@ public class Review {
 
     private Boolean isCompleted; // 완료여부 (true:완료, false:미완료)
 
-    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "note_id")
     private Note note; // 수업일지
 
-    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tag_id")
     private Tag tag; // 태그

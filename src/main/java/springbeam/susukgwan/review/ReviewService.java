@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import springbeam.susukgwan.note.Note;
 import springbeam.susukgwan.note.NoteRepository;
+import springbeam.susukgwan.review.dto.CreateReviewDTO;
 import springbeam.susukgwan.review.dto.ReviewDTO;
 import springbeam.susukgwan.tag.Tag;
 import springbeam.susukgwan.tag.TagRepository;
@@ -14,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -24,15 +26,15 @@ public class ReviewService {
     private final TagRepository tagRepository;
 
     /* 복습항목 추가 */
-    public String createReview(ReviewDTO reviewDTO) {
+    public String createReview(CreateReviewDTO createReviewDTO) {
 
-        Optional<Tutoring> tutoring = tutoringRepository.findById(reviewDTO.getTutoringId());
+        Optional<Tutoring> tutoring = tutoringRepository.findById(createReviewDTO.getTutoringId());
         Optional<Note> note = noteRepository.findById(1L); // 임시 => tutoring 의 최근일지로 찾아오기
-        Optional<Tag> tag = tagRepository.findById(reviewDTO.getTagId());
+        Optional<Tag> tag = tagRepository.findById(createReviewDTO.getTagId());
 
         if (tutoring.isPresent() && note.isPresent() && tag.isPresent()) {
             Review review = Review.builder()
-                    .body(reviewDTO.getBody())
+                    .body(createReviewDTO.getBody())
                     .isCompleted(false)
                     .note(note.get())
                     .tag(tag.get())
@@ -45,7 +47,7 @@ public class ReviewService {
     }
 
     /* 복습항목 수정 */
-    public String updateReview(Long reviewId, ReviewDTO updatedReview) {
+    public String updateReview(Long reviewId, CreateReviewDTO updatedReview) {
 
         Optional<Review> review = reviewRepository.findById(reviewId);
 
@@ -86,7 +88,7 @@ public class ReviewService {
     }
 
     /* 복습내역 불러오기 */
-    public List<Review> reviewList(Long tutoringId) {
+    public List<ReviewDTO> reviewList(Long tutoringId) {
 
         List<Review> reviewList = new ArrayList<>(); // 복습 리스트 선언
         Optional<Tutoring> tutoring = tutoringRepository.findById(tutoringId); // 해당 수업 가져오기
@@ -100,6 +102,7 @@ public class ReviewService {
             }
         }
 
-        return reviewList;
+        List<ReviewDTO> reviewDTOList = reviewList.stream().map(o->new ReviewDTO(o)).collect(Collectors.toList()); // DTO로 변환 (순환참조 방지)
+        return reviewDTOList;
     }
 }
