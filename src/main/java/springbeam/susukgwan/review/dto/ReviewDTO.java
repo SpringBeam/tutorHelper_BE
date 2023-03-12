@@ -5,39 +5,64 @@ import springbeam.susukgwan.note.Note;
 import springbeam.susukgwan.review.Review;
 import springbeam.susukgwan.tag.Tag;
 
-@Getter
-@Setter
 public class ReviewDTO {
-    private Long id;
-    private String body;
-    private Boolean isCompleted;
-    private NoteDTO note;
-    private TagDTO tag;
 
-    public ReviewDTO(Review review) {
-        this.id = review.getId();
-        this.body = review.getBody();
-        this.isCompleted = review.getIsCompleted();
-        this.note = new NoteDTO(review.getNote());
-        this.tag = new TagDTO(review.getTag());
+    @Getter
+    @Setter
+    public static class Create {
+        private Long tutoringId;
+        private String body;
+        private Long tagId;
     }
 
     @Getter
-    public static class NoteDTO {
-        private Long id;
+    @Setter
+    public static class Update {
+        private String body;
+        private Long tagId;
+    }
 
-        public NoteDTO(Note note){
-            this.id = note.getId();
+    @Getter
+    @Setter
+    public static class Check {
+        private Boolean isCompleted;
+    }
+
+    @Getter
+    @Setter
+    public static class Response {
+        private Long id;
+        private String body;
+        private Boolean isCompleted;
+        private ReviewNoteDTO note;
+        private ReviewTagDTO tag;
+
+        public Response(Review review) {
+            this.id = review.getId();
+            this.body = review.getBody();
+            this.isCompleted = review.getIsCompleted();
+            this.note = new ReviewNoteDTO(review.getNote());
+            this.tag = new ReviewTagDTO(review.getTag());
         }
-    }
 
-    @Getter
-    public static class TagDTO {
-        private Long id;
-        private String name;
-        public TagDTO(Tag tag){
-            this.id = tag.getId();
-            this.name = tag.getName();
+        @Getter
+        public static class ReviewNoteDTO {
+            private Long id;
+
+            public ReviewNoteDTO(Note note) {
+                this.id = note.getId();
+            }
+        }
+
+        @Getter
+        public static class ReviewTagDTO {
+            private Long id;
+            private String name;
+
+            public ReviewTagDTO(Tag tag) {
+                this.id = tag.getId();
+                this.name = tag.getName();
+            }
         }
     }
 }

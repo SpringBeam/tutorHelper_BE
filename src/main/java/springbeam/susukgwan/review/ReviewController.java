@@ -5,7 +5,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import springbeam.susukgwan.ResponseCode;
-import springbeam.susukgwan.review.dto.CreateReviewDTO;
 import springbeam.susukgwan.review.dto.ReviewDTO;
 
 import java.util.List;
@@ -17,7 +16,7 @@ public class ReviewController {
     private final ReviewService reviewService;
 
     @PostMapping("")
-    public ResponseEntity<ResponseCode> createReview (@RequestBody CreateReviewDTO createReview){
+    public ResponseEntity<ResponseCode> createReview (@RequestBody ReviewDTO.Create createReview){
         String code = reviewService.createReview(createReview);
         ResponseCode responseCode = ResponseCode.builder().code(code).build();
         if (code.equals("SUCCESS")) {
@@ -29,8 +28,8 @@ public class ReviewController {
 
 
     @PutMapping("/{reviewId}")
-    public ResponseEntity<ResponseCode> updateReview (@PathVariable("reviewId") Long reviewId, @RequestBody CreateReviewDTO updatedReview) {
-        String code = reviewService.updateReview(reviewId, updatedReview);
+    public ResponseEntity<ResponseCode> updateReview (@PathVariable("reviewId") Long reviewId, @RequestBody ReviewDTO.Update updateReview) {
+        String code = reviewService.updateReview(reviewId, updateReview);
         ResponseCode responseCode = ResponseCode.builder().code(code).build();
         if (code.equals("SUCCESS")) {
             return new ResponseEntity<>(responseCode, HttpStatus.OK);
@@ -51,7 +50,7 @@ public class ReviewController {
     }
 
     @PostMapping("/{reviewId}/check")
-    public ResponseEntity<ResponseCode> checkReview (@PathVariable("reviewId") Long reviewId, @RequestBody CreateReviewDTO review) {
+    public ResponseEntity<ResponseCode> checkReview (@PathVariable("reviewId") Long reviewId, @RequestBody ReviewDTO.Check review) {
         String code = reviewService.checkReview(reviewId, review.getIsCompleted());
         ResponseCode responseCode = ResponseCode.builder().code(code).build();
         if (code.equals("SUCCESS")) {
@@ -62,7 +61,7 @@ public class ReviewController {
     }
 
     @GetMapping("/list/{tutoringId}")
-    public List<ReviewDTO> getReview (@PathVariable("tutoringId") Long tutoringId){
+    public List<ReviewDTO.Response> getReview (@PathVariable("tutoringId") Long tutoringId){
         return reviewService.reviewList(tutoringId);
     }
 }
