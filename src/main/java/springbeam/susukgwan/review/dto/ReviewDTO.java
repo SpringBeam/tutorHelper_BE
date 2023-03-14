@@ -5,6 +5,9 @@ import springbeam.susukgwan.note.Note;
 import springbeam.susukgwan.review.Review;
 import springbeam.susukgwan.tag.Tag;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 public class ReviewDTO {
 
     @Getter
@@ -37,12 +40,19 @@ public class ReviewDTO {
         private ReviewNoteDTO note;
         private ReviewTagDTO tag;
 
+        /* Entity -> DTO Response */
         public Response(Review review) {
             this.id = review.getId();
             this.body = review.getBody();
             this.isCompleted = review.getIsCompleted();
             this.note = new ReviewNoteDTO(review.getNote());
             this.tag = new ReviewTagDTO(review.getTag());
+        }
+
+        /* Entity List -> DTO Response List */
+        public static List<Response> ResponseList (List<Review> reviewList) {
+            List<Response> responseList = reviewList.stream().map(o->new Response(o)).collect(Collectors.toList());
+            return responseList;
         }
 
         @Getter
