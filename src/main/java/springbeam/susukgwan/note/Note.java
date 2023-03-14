@@ -6,9 +6,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
+import org.springframework.data.annotation.CreatedDate;
 import springbeam.susukgwan.review.Review;
 import springbeam.susukgwan.tutoring.Tutoring;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,6 +25,9 @@ public class Note {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @CreatedDate
+    private LocalDateTime dateTime;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tutoring_id")

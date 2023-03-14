@@ -10,11 +10,8 @@ import springbeam.susukgwan.tag.TagRepository;
 import springbeam.susukgwan.tutoring.Tutoring;
 import springbeam.susukgwan.tutoring.TutoringRepository;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -31,7 +28,7 @@ public class ReviewService {
         Optional<Tag> tag = tagRepository.findById(createReview.getTagId());
 
         if (tutoring.isPresent() && tag.isPresent()) {
-            List<Note> notes = noteRepository.findByTutoring(tutoring.get());
+            List<Note> notes = noteRepository.findByTutoringOrderByDateTimeDesc(tutoring.get());
             Note note = notes.get(0); // 최근일지
             if (note != null) {
                 Review review = Review.builder()
