@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
@@ -28,23 +29,24 @@ import java.util.Optional;
 public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
     @Autowired
     private final AuthTokenProvider authTokenProvider;
-    // private final AppProperties
     @Autowired
     private final UserRefreshTokenRepository userRefreshTokenRepository;
     // private final UserRepository userRepository;
 
+    /* 소셜 로그인 인증 후 */
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
         String targetUrl = determineTargetUrl(request,response,authentication);
         if (response.isCommitted()) {
             logger.debug("Response has already been committed. Unable to redirect to " + targetUrl);
         }
-        clearAuthenticationAttributes(request);
+        clearAuthenticationAttributes(request); // 소셜 authentication 정보를 지워주고 이후 토큰으로 필터 시 authentication을 설정함.
         getRedirectStrategy().sendRedirect(request, response, targetUrl);   // 현재 request에 대한 응답을 targetUrl로 redirect
     }
     protected String determineTargetUrl(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
         // String redirectUri = request.getParameter("redirect_uri"); for debug
-        String redirectUri = "http://localhost:3030/oauth/redirect";
+        // String redirectUri = "http://localhost:3030/oauth/redirect"; for nodejs test
+        String redirectUri = "exp://localhost:19000/oauth/redirect";
         if (redirectUri == null) {
             //TODO 미리 등록된 redirect uri만 가능하도록 연결 성공 이후 설정해야 함!
             throw new IllegalArgumentException("Please give authorized redirect_uri param for the authentication");
@@ -52,26 +54,25 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
         String targetUrl = redirectUri;
 
-
-        OAuth2AuthenticationToken auth2AuthenticationToken = (OAuth2AuthenticationToken) authentication;
+        // 여기서 사용되는 authentication은 customOauth2UserService에서 가입/로그인 처리를 하고
+        // 그 oauth2User(UserPrincipal)을 인증에 담아 반환한 것이라고 예상할 수 있다.
+        // UserPrincipal(OAuth2User)의 getName을 통해 userId를 접근할 수 있을 것임. (직접 override한 메소드 getName)
         OidcUser oidcUser = (OidcUser) authentication.getPrincipal();   // 인증된 principal 반환
-        // KakaoOAuth2UserInfo userInfo = new KakaoOAuth2UserInfo(oidcUser.getAttributes());
-        // OAuth2UserService? 인증 후 User 객체가 저장되었을 것. authentication 객체에는 생성된 principal이 적용되었음.
-        // UserPrincipal(OAuth2User)의 getName을 통해 userId를 접근할 수 있을 것임.
+        // KakaoOAuth2UserInfo userInfo = new KakaoOAuth2UserInfo(oidcUser.getAttributes()); <- 여러 소셜 구현 시 참고
+        // Optional<User> user = userRepository.findByProviderAndSocialId(Provider.KAKAO, userInfo.getId()); <- 이거 대신 authentication에 담긴 내용으로 해결하는 게 로직 상 빠를듯
+
         String userId = authentication.getName();
-        // Optional<User> user = userRepository.findByProviderAndSocialId(Provider.KAKAO, userInfo.getId());
-
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        boolean isEnabled = userDetails.isEnabled();  // 역할 설정 완료 여부(즉, 가입 완료 여부)
         Collection<? extends GrantedAuthority> authorities = oidcUser.getAuthorities();
-
         RoleType roleType = hasAuthority(authorities, RoleType.ADMIN.getCode())? RoleType.ADMIN : RoleType.USER;
-        Date now = new Date();
 
+        Date now = new Date();
         // accessToken 생성
         AuthToken accessToken = authTokenProvider.createAccessToken(
                 userId,
                 roleType.getCode()
         );
-
         // refreshToken 생성 및 DB 조회 후 저장 혹은 업데이트
         AuthToken refreshToken = authTokenProvider.createRefreshToken(
                 userId,
@@ -93,6 +94,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 .queryParam("accessToken", accessToken.getToken())
                 .queryParam("refreshToken", refreshToken.getToken())
                 .queryParam("accessExpired", authTokenProvider.getAccessTokenExpiry())
+                .queryParam("isEnabled", isEnabled)
                 // .queryParam("refreshExpired", authTokenProvider.getRefreshTokenExpiry())  보내기 고려.
                 .queryParam("userId", userId)
                 .build().toUriString();

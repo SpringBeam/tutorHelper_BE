@@ -12,6 +12,7 @@ import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import springbeam.susukgwan.user.Provider;
+import springbeam.susukgwan.user.Role;
 import springbeam.susukgwan.user.User;
 
 import java.util.Collection;
@@ -27,7 +28,8 @@ public class UserPrincipal implements OAuth2User, UserDetails, OidcUser {
     private final String userId;  // User의 id를 String으로 변환하여 저장.
     private final String password;
     private final Provider providerType;
-    private final RoleType roleType;
+    private final RoleType roleType;    // 서비스 내 관리자, 사용자 구분
+    private final Role role;    // 서비스 내 선생, 학생, 학부모 구분
     private final Collection<GrantedAuthority> authorities;
     private Map<String, Object> attributes;
 
@@ -62,6 +64,9 @@ public class UserPrincipal implements OAuth2User, UserDetails, OidcUser {
     }
     @Override
     public boolean isEnabled() {
+        if (this.role == Role.NONE) {
+            return false;
+        }
         return true;
     }
     @Override
@@ -82,6 +87,7 @@ public class UserPrincipal implements OAuth2User, UserDetails, OidcUser {
                 "",
                 user.getProvider(),
                 RoleType.USER,
+                user.getRole(),
                 Collections.singletonList(new SimpleGrantedAuthority(RoleType.USER.getCode()))
         );
     }
