@@ -46,7 +46,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     protected String determineTargetUrl(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
         // String redirectUri = request.getParameter("redirect_uri"); for debug
         // String redirectUri = "http://localhost:3030/oauth/redirect"; for nodejs test
-        String redirectUri = "exp://localhost:19000/oauth/redirect";
+        String redirectUri = "exp://192.168.165.254:19000";
         if (redirectUri == null) {
             //TODO 미리 등록된 redirect uri만 가능하도록 연결 성공 이후 설정해야 함!
             throw new IllegalArgumentException("Please give authorized redirect_uri param for the authentication");
