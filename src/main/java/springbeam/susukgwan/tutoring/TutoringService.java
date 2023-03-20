@@ -2,6 +2,7 @@ package springbeam.susukgwan.tutoring;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import springbeam.susukgwan.schedule.Time;
 import springbeam.susukgwan.schedule.TimeRepository;
@@ -27,8 +28,11 @@ public class TutoringService {
 
     public String registerTutoring (RegisterTutoringDTO registerTutoringDTO) {
         /* TODO 선생, 학생 및 과목 중복 확인 -> FAIL 설정 (나중에) */
-        /* TODO **현재 액세스토큰 확인하여 tutorId 가져오기!** (로그인 인증 구현 후) */
-        Long tutorId = 0L;
+
+        /* TODO완료 **현재 액세스토큰 확인하여 tutorId 가져오기!** (로그인 인증 구현 후) */
+        String tutorIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
+        Long tutorId = Long.parseLong(tutorIdStr);
+
         LocalDate startDate = LocalDate.parse(registerTutoringDTO.getStartDate()); // startDate parsing
         Tutoring newTutoring = Tutoring.builder().tutorId(tutorId).startDate(startDate)
                 .subject(registerTutoringDTO.getSubject())
@@ -55,8 +59,11 @@ public class TutoringService {
     }
 
     public String updateTutoring(UpdateTutoringDTO updateTutoringDTO) {
-        /* TODO **현재 액세스토큰 확인하여 본인 수업인지 확인 (로그인 인증 구현 후) */
-        Optional<Tutoring> tutoringOptional = tutoringRepository.findById(updateTutoringDTO.getTutoringId());
+        /* TODO완료 현재 액세스토큰 확인하여 본인 수업인지 확인 (로그인 인증 구현 후) */
+        String tutorIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
+        Long tutorId = Long.parseLong(tutorIdStr);
+        Optional<Tutoring> tutoringOptional = tutoringRepository.findByIdAndTutorId(updateTutoringDTO.getTutoringId(), tutorId);
+
         if (tutoringOptional.isPresent()) {
             Tutoring tutoring = tutoringOptional.get();
             tutoring.setSubject(updateTutoringDTO.getSubject());
@@ -70,8 +77,10 @@ public class TutoringService {
     }
 
     public String deleteTutoring(DeleteTutoringDTO deleteTutoringDTO) {
-        /* TODO **현재 액세스토큰 확인하여 본인 수업인지 확인 (로그인 인증 구현 후) */
-        Optional<Tutoring> tutoringOptional = tutoringRepository.findById(deleteTutoringDTO.getTutoringId());
+        /* TODO완료 **현재 액세스토큰 확인하여 본인 수업인지 확인 (로그인 인증 구현 후) */
+        String tutorIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
+        Long tutorId = Long.parseLong(tutorIdStr);
+        Optional<Tutoring> tutoringOptional = tutoringRepository.findByIdAndTutorId(deleteTutoringDTO.getTutoringId(), tutorId);
         if (tutoringOptional.isPresent()) {
             tutoringRepository.delete(tutoringOptional.get());
             return "SUCCESS";

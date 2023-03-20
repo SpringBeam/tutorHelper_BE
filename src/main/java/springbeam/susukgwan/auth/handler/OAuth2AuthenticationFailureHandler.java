@@ -18,7 +18,8 @@ public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationF
     @Override
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response, AuthenticationException exception) throws IOException {
         // String targetUrl = request.getParameter("redirect_uri");
-        String targetUrl = "http://localhost:3000/oauth/redirect";
+        // String targetUrl = "http://localhost:3000/oauth/redirect"; for nodejs test
+        String targetUrl = "exp://localhost:19000/oauth/redirect";
 
         exception.printStackTrace();
 
