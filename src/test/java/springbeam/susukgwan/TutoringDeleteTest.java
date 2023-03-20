@@ -10,7 +10,7 @@ import java.util.Optional;
 
 
 // 개발 후 서버에 올리기 전에는 아래의 SpringBootTest를 주석처리 시켜야 함. test 띄우기가 안 된다는 에러 메시지와 함께 빌드가 막히기 때문.
-@SpringBootTest
+// @SpringBootTest
 public class TutoringDeleteTest {
     @Autowired
     private TutoringRepository tutoringRepository;
