@@ -46,6 +46,7 @@ public class SecurityConfig {
                     .and()
                 .authorizeHttpRequests() // url별 접근 권한 제어
                 .requestMatchers(HttpMethod.OPTIONS).permitAll() // CORS preflight 막기
+                .requestMatchers("/health").permitAll()
                 .requestMatchers("/login/**", "/oauth2/**").permitAll()
                 .requestMatchers("/api/**").hasAnyAuthority(RoleType.USER.getCode())
                 .anyRequest().authenticated() // 위 패턴 이외의 모든 요청 인증 후 사용 가능.
