@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 import springbeam.susukgwan.schedule.Time;
+import springbeam.susukgwan.subject.Subject;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -21,8 +22,10 @@ public class Tutoring {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private String subject; // 과목
+//    @Column(nullable = false)
+    @ManyToOne
+    @JoinColumn(name = "subject_id")
+    private Subject subject; // 과목
 
     @Column(nullable = false)
     private LocalDate startDate; // 과외 시작 날짜 (유저 선택 날짜)
