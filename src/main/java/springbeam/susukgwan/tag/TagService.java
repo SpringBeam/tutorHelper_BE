@@ -2,7 +2,6 @@ package springbeam.susukgwan.tag;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import springbeam.susukgwan.review.dto.ReviewDTO;
 import springbeam.susukgwan.subject.Subject;
 import springbeam.susukgwan.subject.SubjectRepository;
 import springbeam.susukgwan.tag.dto.TagDTO;
@@ -34,16 +33,14 @@ public class TagService {
         return "FAIL";
     }
 
+    /* 해당 수업에 달려있는 모든 태그 리스트 */
     public TagDTO.ResponseTagList tagList(Long tutoringId) {
         Optional<Tutoring> tutoring = tutoringRepository.findById(tutoringId);
         TagDTO.ResponseTagList tagList = new TagDTO.ResponseTagList();
         if (tutoring.isPresent()) {
-            System.out.println("======================================");
             Subject subject = tutoring.get().getSubject();
             tagList.setCount(subject.getTagList().size());
-//            tagList.setTagList(subject.getTagList());
-            //List<Response> responseList = reviewList.stream().map(o->new Response(o)).collect(Collectors.toList());
-            List<ReviewDTO.Response.ReviewTagDTO> tagDTOList = subject.getTagList().stream().map(o->new ReviewDTO.Response.ReviewTagDTO(o)).collect(Collectors.toList());
+            List<TagDTO.ResponseTag> tagDTOList = subject.getTagList().stream().map(o->new TagDTO.ResponseTag(o)).collect(Collectors.toList());
             tagList.setTagList(tagDTOList);
         }
         return tagList;

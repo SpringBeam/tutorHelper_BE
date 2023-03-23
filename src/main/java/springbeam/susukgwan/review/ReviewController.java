@@ -60,8 +60,8 @@ public class ReviewController {
         }
     }
 
-    @GetMapping("/list/{tutoringId}")
-    public List<ReviewDTO.Response> getReview (@PathVariable("tutoringId") Long tutoringId){
-        return reviewService.reviewList(tutoringId);
+    @GetMapping("/list")
+    public List<ReviewDTO.Response> getReview (@RequestBody ReviewDTO.ListRequest listRequest){
+        return reviewService.reviewList(listRequest.getTutoringId());
     }
 }

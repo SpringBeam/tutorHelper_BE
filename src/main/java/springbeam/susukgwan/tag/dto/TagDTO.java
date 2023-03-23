@@ -2,7 +2,6 @@ package springbeam.susukgwan.tag.dto;
 
 import lombok.Getter;
 import lombok.Setter;
-import springbeam.susukgwan.review.dto.ReviewDTO;
 import springbeam.susukgwan.tag.Tag;
 
 import java.util.List;
@@ -17,7 +16,7 @@ public class TagDTO {
 
     @Getter
     @Setter
-    public static class RequestList {
+    public static class ListRequest {
         private Long tutoringId;
     }
 
@@ -25,6 +24,17 @@ public class TagDTO {
     @Setter
     public static class ResponseTagList {
         private int count;
-        private List<ReviewDTO.Response.ReviewTagDTO> tagList;
+        private List<ResponseTag> tagList;
+    }
+
+    @Getter
+    @Setter
+    public static class ResponseTag {
+        private Long id;
+        private String name;
+        public ResponseTag(Tag tag) {
+            this.id = tag.getId();
+            this.name = tag.getName();
+        }
     }
 }

@@ -3,7 +3,7 @@ package springbeam.susukgwan.review.dto;
 import lombok.*;
 import springbeam.susukgwan.note.Note;
 import springbeam.susukgwan.review.Review;
-import springbeam.susukgwan.tag.Tag;
+import springbeam.susukgwan.tag.dto.TagDTO;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -33,12 +33,18 @@ public class ReviewDTO {
 
     @Getter
     @Setter
+    public static class ListRequest {
+        private Long tutoringId;
+    }
+
+    @Getter
+    @Setter
     public static class Response {
         private Long id;
         private String body;
         private Boolean isCompleted;
         private ReviewNoteDTO note;
-        private ReviewTagDTO tag;
+        private TagDTO.ResponseTag tag;
 
         /* Entity -> DTO Response */
         public Response(Review review) {
@@ -46,7 +52,7 @@ public class ReviewDTO {
             this.body = review.getBody();
             this.isCompleted = review.getIsCompleted();
             this.note = new ReviewNoteDTO(review.getNote());
-            this.tag = new ReviewTagDTO(review.getTag());
+            this.tag = new TagDTO.ResponseTag(review.getTag());
         }
 
         /* Entity List -> DTO Response List */
@@ -61,17 +67,6 @@ public class ReviewDTO {
 
             public ReviewNoteDTO(Note note) {
                 this.id = note.getId();
-            }
-        }
-
-        @Getter
-        public static class ReviewTagDTO {
-            private Long id;
-            private String name;
-
-            public ReviewTagDTO(Tag tag) {
-                this.id = tag.getId();
-                this.name = tag.getName();
             }
         }
     }

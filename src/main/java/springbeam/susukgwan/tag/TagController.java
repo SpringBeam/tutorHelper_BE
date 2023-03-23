@@ -25,7 +25,7 @@ public class TagController {
     }
 
     @GetMapping("/list")
-    public TagDTO.ResponseTagList tagList (@RequestBody TagDTO.RequestList tagList) {
+    public TagDTO.ResponseTagList tagList (@RequestBody TagDTO.ListRequest tagList) {
         return tagService.tagList(tagList.getTutoringId());
     }
 }
