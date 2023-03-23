@@ -35,7 +35,8 @@ public class SecurityConfig {
     private final OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
     @Autowired
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-
+    @Autowired
+    private final HttpCookieOAuth2AuthorizationRequestRepository httpCookieOAuth2AuthorizationRequestRepository;
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -44,10 +45,13 @@ public class SecurityConfig {
                 .cors()
                 // .configurationSource(request -> new CorsConfiguration().applyPermitDefaultValues())
                     .and()
+                .exceptionHandling()
+                .authenticationEntryPoint(new RestAuthenticationEntryPoint())   // 인증 없이 액세스할 때의 exception 처리: 401 Unauthorized
+                .and()
                 .authorizeHttpRequests() // url별 접근 권한 제어
                 .requestMatchers(HttpMethod.OPTIONS).permitAll() // CORS preflight 막기
                 .requestMatchers("/health").permitAll()
-                .requestMatchers("/login/**", "/oauth2/**").permitAll()
+                .requestMatchers("/login/**", "/oauth2/**", "/error").permitAll()
                 .requestMatchers("/api/**").hasAnyAuthority(RoleType.USER.getCode())
                 .anyRequest().authenticated() // 위 패턴 이외의 모든 요청 인증 후 사용 가능.
                     .and()
@@ -57,6 +61,7 @@ public class SecurityConfig {
                 .oauth2Login()
                 .authorizationEndpoint()
                 .baseUri("/oauth2/authorization")
+                .authorizationRequestRepository(httpCookieOAuth2AuthorizationRequestRepository)
                 .and()
                 .redirectionEndpoint()
                 .baseUri("/oauth2/callback/*")
