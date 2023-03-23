@@ -1,6 +1,7 @@
 package springbeam.susukgwan.auth.handler;
 
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +32,9 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     private final AuthTokenProvider authTokenProvider;
     @Autowired
     private final UserRefreshTokenRepository userRefreshTokenRepository;
-    // private final UserRepository userRepository;
+    @Autowired
+    private final HttpCookieOAuth2AuthorizationRequestRepository httpCookieOAuth2AuthorizationRequestRepository;
+
 
     /* 소셜 로그인 인증 후 */
     @Override
@@ -40,19 +43,19 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         if (response.isCommitted()) {
             logger.debug("Response has already been committed. Unable to redirect to " + targetUrl);
         }
-        clearAuthenticationAttributes(request); // 소셜 authentication 정보를 지워주고 이후 토큰으로 필터 시 authentication을 설정함.
+        clearAuthenticationAttributes(request, response); // 소셜 authentication 정보를 지워주고 이후 토큰으로 필터 시 authentication을 설정함.
         getRedirectStrategy().sendRedirect(request, response, targetUrl);   // 현재 request에 대한 응답을 targetUrl로 redirect
     }
     protected String determineTargetUrl(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
-        // String redirectUri = request.getParameter("redirect_uri"); for debug
-        // String redirectUri = "http://localhost:3030/oauth/redirect"; for nodejs test
-        String redirectUri = "exp://192.168.165.254:19000";
-        if (redirectUri == null) {
-            //TODO 미리 등록된 redirect uri만 가능하도록 연결 성공 이후 설정해야 함!
-            throw new IllegalArgumentException("Please give authorized redirect_uri param for the authentication");
-        }
+        Optional<String> redirectUri =
+                CookieUtil.getCookie(request, httpCookieOAuth2AuthorizationRequestRepository.REDIRECT_URI_PARAM_COOKIE_NAME)
+                        .map(Cookie::getValue);
 
-        String targetUrl = redirectUri;
+        if (redirectUri.isEmpty()) {
+            //TODO 미리 등록된 redirect uri만 가능하도록 연결 성공 이후 설정해야 함!
+            throw new IllegalArgumentException("Please give redirect_uri param for the authentication");
+        }
+        String targetUrl = redirectUri.get();
 
         // 여기서 사용되는 authentication은 customOauth2UserService에서 가입/로그인 처리를 하고
         // 그 oauth2User(UserPrincipal)을 인증에 담아 반환한 것이라고 예상할 수 있다.
@@ -98,6 +101,11 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 // .queryParam("refreshExpired", authTokenProvider.getRefreshTokenExpiry())  보내기 고려.
                 .queryParam("userId", userId)
                 .build().toUriString();
+    }
+    // remove authenticationAttributes from request and clear AuthenticationRequestCookies
+    protected void clearAuthenticationAttributes(HttpServletRequest request, HttpServletResponse response) {
+        super.clearAuthenticationAttributes(request);
+        httpCookieOAuth2AuthorizationRequestRepository.removeAuthorizationRequestCookies(request, response);
     }
     private boolean hasAuthority(Collection<? extends GrantedAuthority> authorities, String authority) {
         if (authorities == null) {
