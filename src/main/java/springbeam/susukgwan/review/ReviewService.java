@@ -4,7 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import springbeam.susukgwan.note.Note;
 import springbeam.susukgwan.note.NoteRepository;
-import springbeam.susukgwan.review.dto.ReviewDTO;
+import springbeam.susukgwan.review.dto.ReviewRequestDTO;
+import springbeam.susukgwan.review.dto.ReviewResponseDTO;
 import springbeam.susukgwan.tag.Tag;
 import springbeam.susukgwan.tag.TagRepository;
 import springbeam.susukgwan.tutoring.Tutoring;
@@ -12,6 +13,7 @@ import springbeam.susukgwan.tutoring.TutoringRepository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -22,7 +24,7 @@ public class ReviewService {
     private final TagRepository tagRepository;
 
     /* 복습항목 추가 */
-    public String createReview(ReviewDTO.Create createReview) {
+    public String createReview(ReviewRequestDTO.Create createReview) {
 
         Optional<Tutoring> tutoring = tutoringRepository.findById(createReview.getTutoringId());
         Optional<Tag> tag = tagRepository.findById(createReview.getTagId());
@@ -46,7 +48,7 @@ public class ReviewService {
     }
 
     /* 복습항목 수정 */
-    public String updateReview(Long reviewId, ReviewDTO.Update updateReview) {
+    public String updateReview(Long reviewId, ReviewRequestDTO.Update updateReview) {
 
         Optional<Review> review = reviewRepository.findById(reviewId);
 
@@ -87,8 +89,9 @@ public class ReviewService {
     }
 
     /* 복습내역 불러오기 */
-    public List<ReviewDTO.Response> reviewList(Long tutoringId) {
+    public List<ReviewResponseDTO> reviewList(Long tutoringId) {
         List<Review> reviewList = reviewRepository.GetReviewListbyTutoringId(tutoringId);
-        return ReviewDTO.Response.ResponseList(reviewList); // DTO로 반환 (순환참조 방지)
+        List<ReviewResponseDTO> responseList = reviewList.stream().map(o->new ReviewResponseDTO(o)).collect(Collectors.toList());
+        return responseList; // DTO로 반환 (순환참조 방지)
     }
 }
