@@ -2,10 +2,8 @@ package springbeam.susukgwan.auth;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import springbeam.susukgwan.auth.dto.RefreshDTO;
 import springbeam.susukgwan.auth.vo.TokenRefreshVO;
 
 @RestController
@@ -13,10 +11,11 @@ import springbeam.susukgwan.auth.vo.TokenRefreshVO;
 public class AuthController {
     @Autowired
     private AuthService authService;
-    @GetMapping("/refresh")
-    public TokenRefreshVO refreshToken(HttpServletRequest request, @RequestParam String refreshToken) {
+    @PostMapping("/refresh")
+    public TokenRefreshVO refreshToken(HttpServletRequest request, @RequestBody RefreshDTO refreshDTO) {
         String accessToken = JwtHeaderUtil.getAccessToken(request);
-        TokenRefreshVO tokenRefreshVO = authService.refreshToken(accessToken, refreshToken);
+        TokenRefreshVO tokenRefreshVO = authService.refreshToken(accessToken, refreshDTO.getRefreshToken());
+        // TODO 응답코드, 응답 규격화하기
         return tokenRefreshVO;
     }
 }
