@@ -20,8 +20,16 @@ public class UserController {
     public ResponseEntity signUp(@RequestBody SignUpDTO signUpDTO) {
         return userService.signUpUser(signUpDTO);
     }
+    @GetMapping("/detail")
+    public ResponseEntity getUserDetail() {
+        return userService.getUserDetail();
+    }
     @PutMapping("/update")
     public ResponseEntity update(@RequestBody UpdateDTO updateDTO) {
         return userService.updateUser(updateDTO);
+    }
+    @DeleteMapping("/withdraw")
+    public ResponseEntity delete() {
+        return userService.deleteUser();
     }
 }
