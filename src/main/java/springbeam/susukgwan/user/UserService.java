@@ -6,6 +6,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import springbeam.susukgwan.user.dto.SignUpDTO;
 import springbeam.susukgwan.user.dto.UpdateDTO;
+import springbeam.susukgwan.user.vo.UserDetailVO;
 
 import java.util.Optional;
 
@@ -38,6 +39,18 @@ public class UserService {
         }
         return ResponseEntity.internalServerError().build();
     }
+    public ResponseEntity<?> getUserDetail() {
+        String userIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
+        Long userId = Long.parseLong(userIdStr);
+        Optional<User> userOptional = userRepository.findById(userId);
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            return ResponseEntity.ok().body(
+                    UserDetailVO.builder().role(user.getRole().getRole())
+            );
+        }
+        else return ResponseEntity.internalServerError().build();
+    }
     public ResponseEntity<?> updateUser(UpdateDTO updateDTO) {
         String userIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
         Long userId = Long.parseLong(userIdStr);
@@ -49,5 +62,15 @@ public class UserService {
             return ResponseEntity.ok().build();
         }
         else return ResponseEntity.internalServerError().build();
+    }
+    public ResponseEntity<?> deleteUser() {
+        String userIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
+        Long userId = Long.parseLong(userIdStr);
+        Optional<User> userOptional = userRepository.findById(userId);
+        if (userOptional.isPresent()) {
+            userRepository.delete(userOptional.get());
+            return ResponseEntity.ok().build();
+        }
+        return ResponseEntity.internalServerError().build();
     }
 }
