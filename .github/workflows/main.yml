@@ -35,6 +35,7 @@ jobs:
             spring.datasource.password
             spring.security.oauth2.client.registration.kakao.client-id
             spring.security.oauth2.client.registration.kakao.client-secret
+            spring.security.oauth2.client.registration.kakao.redirect-uri
             jwt.secret.key
           value: |
             ${{ secrets.RDS_URL }}
@@ -42,6 +43,7 @@ jobs:
             ${{ secrets.RDS_PASSWORD }}
             ${{ secrets.KAKAO_ID }}
             ${{ secrets.KAKAO_SECRET }}
+            ${{ secrets.KAKAO_REDIRECT_URI }}
             ${{ secrets.JWT_SECRET }}
       
       - name: Build with Gradle
