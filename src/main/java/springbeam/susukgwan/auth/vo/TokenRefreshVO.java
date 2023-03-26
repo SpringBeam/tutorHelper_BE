@@ -8,7 +8,6 @@ import lombok.Setter;
 @Setter
 @Builder
 public class TokenRefreshVO {
-    private String code;
     private String accessToken;
     private String refreshToken;
 }
