@@ -1,9 +1,12 @@
 package springbeam.susukgwan.user;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import springbeam.susukgwan.ResponseMsg;
+import springbeam.susukgwan.ResponseMsgList;
 import springbeam.susukgwan.user.dto.SignUpDTO;
 import springbeam.susukgwan.user.dto.UpdateDTO;
 import springbeam.susukgwan.user.vo.UserDetailVO;
@@ -37,7 +40,7 @@ public class UserService {
                 return ResponseEntity.ok().build();
             }
         }
-        return ResponseEntity.internalServerError().build();
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ResponseMsg(ResponseMsgList.NO_SUCH_USER_IN_DB.getMsg()));
     }
     public ResponseEntity<?> getUserDetail() {
         String userIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -49,7 +52,7 @@ public class UserService {
                     UserDetailVO.builder().role(user.getRole().getRole())
             );
         }
-        else return ResponseEntity.internalServerError().build();
+        else return ResponseEntity.status(HttpStatus.CONFLICT).body(new ResponseMsg(ResponseMsgList.NO_SUCH_USER_IN_DB.getMsg()));
     }
     public ResponseEntity<?> updateUser(UpdateDTO updateDTO) {
         String userIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -61,7 +64,7 @@ public class UserService {
             userRepository.save(user);
             return ResponseEntity.ok().build();
         }
-        else return ResponseEntity.internalServerError().build();
+        else return ResponseEntity.status(HttpStatus.CONFLICT).body(new ResponseMsg(ResponseMsgList.NO_SUCH_USER_IN_DB.getMsg()));
     }
     public ResponseEntity<?> deleteUser() {
         String userIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -71,6 +74,6 @@ public class UserService {
             userRepository.delete(userOptional.get());
             return ResponseEntity.ok().build();
         }
-        return ResponseEntity.internalServerError().build();
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ResponseMsg(ResponseMsgList.NO_SUCH_USER_IN_DB.getMsg()));
     }
 }
