@@ -2,23 +2,26 @@ package springbeam.susukgwan.tutoring;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import springbeam.susukgwan.ResponseMsg;
+import springbeam.susukgwan.ResponseMsgList;
 import springbeam.susukgwan.schedule.Time;
 import springbeam.susukgwan.schedule.TimeRepository;
 import springbeam.susukgwan.subject.Subject;
 import springbeam.susukgwan.subject.SubjectRepository;
-import springbeam.susukgwan.tutoring.dto.DeleteTutoringDTO;
-import springbeam.susukgwan.tutoring.dto.RegisterTutoringDTO;
-import springbeam.susukgwan.tutoring.dto.UpdateTutoringDTO;
+import springbeam.susukgwan.tutoring.dto.*;
+import springbeam.susukgwan.user.Role;
+import springbeam.susukgwan.user.User;
+import springbeam.susukgwan.user.UserRepository;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -29,10 +32,13 @@ public class TutoringService {
     private TimeRepository timeRepository;
     @Autowired
     private SubjectRepository subjectRepository;
+    @Autowired
+    private InvitationCodeRepository invitationCodeRepository;
+    @Autowired
+    private UserRepository userRepository;
 
-    public String registerTutoring (RegisterTutoringDTO registerTutoringDTO) {
-        /* TODO 선생, 학생 및 과목 중복 확인 -> FAIL 설정 (나중에) */
-        /* TODO완료 **현재 액세스토큰 확인하여 tutorId 가져오기!** (로그인 인증 구현 후) */
+    public ResponseEntity<?> registerTutoring (RegisterTutoringDTO registerTutoringDTO) {
+        /* TODO 선생, 학생 및 과목 중복 확인 -> 중복 요청 시 BAD REQUEST 반환 (나중에) */
         String tutorIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
         Long tutorId = Long.parseLong(tutorIdStr);
 
@@ -60,14 +66,14 @@ public class TutoringService {
                             .build();
             timeRepository.save(regularTime);
         }
-        return "SUCCESS";
+        return ResponseEntity.ok().build();
     }
 
-    public String updateTutoring(UpdateTutoringDTO updateTutoringDTO) {
+    public ResponseEntity<?> updateTutoring(Long tutoringId, UpdateTutoringDTO updateTutoringDTO) {
         /* TODO완료 현재 액세스토큰 확인하여 본인 수업인지 확인 (로그인 인증 구현 후) */
         String tutorIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
         Long tutorId = Long.parseLong(tutorIdStr);
-        Optional<Tutoring> tutoringOptional = tutoringRepository.findByIdAndTutorId(updateTutoringDTO.getTutoringId(), tutorId);
+        Optional<Tutoring> tutoringOptional = tutoringRepository.findByIdAndTutorId(tutoringId, tutorId);
 
         if (tutoringOptional.isPresent()) {
             Tutoring tutoring = tutoringOptional.get();
@@ -75,24 +81,24 @@ public class TutoringService {
             tutoring.setSubject(subject);
             tutoring.setStartDate(LocalDate.parse(updateTutoringDTO.getStartDate()));
             tutoringRepository.save(tutoring);
-            return "SUCCESS";
+            return ResponseEntity.ok().build();
         }
         else {
-            return "FAIL";
+            return ResponseEntity.notFound().build();
         }
     }
 
-    public String deleteTutoring(DeleteTutoringDTO deleteTutoringDTO) {
+    public ResponseEntity<?> deleteTutoring(Long tutoringId) {
         /* TODO완료 **현재 액세스토큰 확인하여 본인 수업인지 확인 (로그인 인증 구현 후) */
         String tutorIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
         Long tutorId = Long.parseLong(tutorIdStr);
-        Optional<Tutoring> tutoringOptional = tutoringRepository.findByIdAndTutorId(deleteTutoringDTO.getTutoringId(), tutorId);
+        Optional<Tutoring> tutoringOptional = tutoringRepository.findByIdAndTutorId(tutoringId, tutorId);
         if (tutoringOptional.isPresent()) {
             tutoringRepository.delete(tutoringOptional.get());
-            return "SUCCESS";
+            return ResponseEntity.ok().build();
         }
         else {
-            return "FAIL";
+            return ResponseEntity.notFound().build();
         }
     }
 
@@ -111,4 +117,116 @@ public class TutoringService {
         }
         return subject;
     }
+    public ResponseEntity<?> invite(Long tutoringId, Role role) {
+        String tutorIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
+        Long tutorId = Long.parseLong(tutorIdStr);
+        Optional<Tutoring> tutoringOptional = tutoringRepository.findByIdAndTutorId(tutoringId, tutorId);
+        if (tutoringOptional.isPresent()) {
+            Tutoring tutoring = tutoringOptional.get();
+            // exception1. Tutoring has a tutee or a parent already.
+            if (role == Role.TUTEE) {
+                if (tutoring.getTuteeId() != null) {
+                    return ResponseEntity.status(HttpStatus.CONFLICT).body(new ResponseMsg(ResponseMsgList.TUTEE_ALREADY_EXISTS.getMsg()));
+                }
+            }
+            else if (role == Role.PARENT) {
+                if (tutoring.getParentId() != null) {
+                    return ResponseEntity.status(HttpStatus.CONFLICT).body(new ResponseMsg(ResponseMsgList.PARENT_ALREADY_EXISTS.getMsg()));
+                }
+            }
+            // If an invitation code for the role is already issued, delete it.
+            Optional<InvitationCode> oldCodeOpt = invitationCodeRepository.findByTutoringIdAndRole(tutoringId, role);
+            if (oldCodeOpt.isPresent()) {
+                invitationCodeRepository.delete(oldCodeOpt.get());
+            }
+            // generate new random code(not duplicated)
+            String newCode;
+            do {
+                newCode = generateRandomAlphaNumericString();
+            } while (invitationCodeRepository.findByCode(newCode).isEmpty());
+            InvitationCode invitationCode = InvitationCode.builder()
+                    .code(newCode).tutoringId(tutoring.getId()).role(role).build();
+            invitationCodeRepository.saveAndFlush(invitationCode);
+            InvitationCodeDTO invitationCodeDTO = InvitationCodeDTO.builder().invitationCode(newCode).build();
+            return ResponseEntity.ok().body(invitationCodeDTO);
+        }
+        else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+    public ResponseEntity<?> approveInvitation(InvitationCodeDTO invitationCodeDTO) {
+        String userIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
+        Long userId = Long.parseLong(userIdStr);
+        Optional<User> userOptional = userRepository.findById(userId);
+        if (userOptional.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(new ResponseMsg(ResponseMsgList.NO_SUCH_USER_IN_DB.getMsg()));
+        }
+        User user = userOptional.get();
+        if (user.getRole() == Role.NONE || user.getRole() == Role.TUTOR) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        Optional<InvitationCode> invitationCodeOptional = invitationCodeRepository.findByCode(invitationCodeDTO.getInvitationCode());
+        if (invitationCodeOptional.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NO_SUCH_INVITATION_CODE.getMsg()));
+        }
+        InvitationCode invitationCode = invitationCodeOptional.get();
+        if (user.getRole() != invitationCode.getRole()) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        // save tutee or parent to tutoring entity
+        Optional<Tutoring> tutoringOptional = tutoringRepository.findById(invitationCode.getTutoringId());
+        if (tutoringOptional.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+        Tutoring tutoring = tutoringOptional.get();
+        if (invitationCode.getRole() == Role.TUTEE) {
+            tutoring.setTuteeId(userId);
+        }
+        else {
+            tutoring.setParentId(userId);
+        }
+        tutoringRepository.save(tutoring);
+        return ResponseEntity.ok().build();
+    }
+    public ResponseEntity<?> withdrawFromTutoring(Long tutoringId) {
+        String userIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
+        Long userId = Long.parseLong(userIdStr);
+        Optional<User> userOptional = userRepository.findById(userId);
+        if (userOptional.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(new ResponseMsg(ResponseMsgList.NO_SUCH_USER_IN_DB.getMsg()));
+        }
+        User user = userOptional.get();
+        if (user.getRole() == Role.NONE || user.getRole() == Role.TUTOR) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        Optional<Tutoring> tutoringOptional = tutoringRepository.findById(tutoringId);
+        if (tutoringOptional.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NO_SUCH_TUTORING.getMsg()));
+        }
+        Tutoring tutoring = tutoringOptional.get();
+        if (tutoring.getTuteeId() == userId) {
+            tutoring.setTuteeId(null);
+            tutoringRepository.save(tutoring);
+            return ResponseEntity.ok().build();
+        } else if (tutoring.getParentId() == userId) {
+            tutoring.setParentId(null);
+            tutoringRepository.save(tutoring);
+            return ResponseEntity.ok().build();
+        } else {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+    }
+    private String generateRandomAlphaNumericString() {
+        int leftLimit = 48; // '0'
+        int rightLimit = 122; // 'z'
+        int length = 8;
+        Random random = new Random();
+        String randomStr = random.ints(leftLimit, rightLimit)
+                .filter(i -> (i<=57 || i>=65) && (i<=90 || i>=97))
+                .limit(length)
+                .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
+                .toString();
+        return randomStr;
+    }
+
 }

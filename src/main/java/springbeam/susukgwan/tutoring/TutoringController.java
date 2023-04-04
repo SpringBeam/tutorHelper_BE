@@ -3,14 +3,11 @@ package springbeam.susukgwan.tutoring;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 import springbeam.susukgwan.ResponseCode;
-import springbeam.susukgwan.tutoring.dto.DeleteTutoringDTO;
-import springbeam.susukgwan.tutoring.dto.RegisterTutoringDTO;
-import springbeam.susukgwan.tutoring.dto.UpdateTutoringDTO;
+import springbeam.susukgwan.tutoring.dto.*;
+import springbeam.susukgwan.user.Role;
 
 @Slf4j
 @RestController
@@ -20,19 +17,32 @@ public class TutoringController {
     @Autowired
     private TutoringService tutoringService;
 
-    @PostMapping("/register")
-    public ResponseCode registerTutoring (@RequestBody RegisterTutoringDTO registerTutoringDTO) {
-        String code = tutoringService.registerTutoring(registerTutoringDTO);
-        return ResponseCode.builder().code(code).build();
+    @PostMapping("")
+    public ResponseEntity registerTutoring (@RequestBody RegisterTutoringDTO registerTutoringDTO) {
+        return tutoringService.registerTutoring(registerTutoringDTO);
     }
-    @PostMapping("/update")
-    public ResponseCode updateTutoring (@RequestBody UpdateTutoringDTO updateTutoringDTO) {
-        String code = tutoringService.updateTutoring(updateTutoringDTO);
-        return ResponseCode.builder().code(code).build();
+    @PutMapping("/{tutoringId}")
+    public ResponseEntity updateTutoring (@PathVariable("tutoringId") Long tutoringId, @RequestBody UpdateTutoringDTO updateTutoringDTO) {
+        return tutoringService.updateTutoring(tutoringId, updateTutoringDTO);
     }
-    @PostMapping("/delete")
-    public ResponseCode deleteTutoring (@RequestBody DeleteTutoringDTO deleteTutoringDTO) {
-        String code = tutoringService.deleteTutoring(deleteTutoringDTO);
-        return ResponseCode.builder().code(code).build();
+    @DeleteMapping("/{tutoringId}")
+    public ResponseEntity deleteTutoring (@PathVariable("tutoringId") Long tutoringId) {
+        return tutoringService.deleteTutoring(tutoringId);
+    }
+    @PostMapping("/{tutoringId}/invite/tutee")
+    public ResponseEntity inviteTutee(@PathVariable("tutoringId") Long tutoringId) {
+        return tutoringService.invite(tutoringId, Role.TUTEE);
+    }
+    @PostMapping("/{tutoringId}/invite/parent")
+    public ResponseEntity inviteParent(@PathVariable("tutoringId") Long tutoringId) {
+        return tutoringService.invite(tutoringId, Role.PARENT);
+    }
+    @PostMapping("/invite/approve")
+    public ResponseEntity approveInvitation(@RequestBody InvitationCodeDTO invitationCodeDTO) {
+        return tutoringService.approveInvitation(invitationCodeDTO);
+    }
+    @DeleteMapping("/{tutoringId}/withdraw")
+    public ResponseEntity withdrawFromTutoring(@PathVariable("tutoringId") Long tutoringId) {
+        return tutoringService.withdrawFromTutoring(tutoringId);
     }
 }

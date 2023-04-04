@@ -8,7 +8,6 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UpdateTutoringDTO {
-    private Long tutoringId;
     private String subject;
     private String startDate;
 }
