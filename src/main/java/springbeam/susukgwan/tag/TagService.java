@@ -1,9 +1,9 @@
 package springbeam.susukgwan.tag;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import springbeam.susukgwan.subject.Subject;
-import springbeam.susukgwan.subject.SubjectRepository;
 import springbeam.susukgwan.tag.dto.TagRequestDTO;
 import springbeam.susukgwan.tag.dto.TagResponseDTO;
 import springbeam.susukgwan.tutoring.Tutoring;
@@ -17,21 +17,23 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class TagService {
     private final TagRepository tagRepository;
-    private final SubjectRepository subjectRepository;
     private final TutoringRepository tutoringRepository;
 
     /* 태그 추가 */
-    public String createTag(TagRequestDTO.Create createTag){
-        Optional<Subject> subject = subjectRepository.findById(createTag.getSubjectId());
-        if (subject.isPresent() && subject.get().getTagList().size() < 10) { // 기존 등록태그가 10개 미만일때만 추가 가능
-            Tag tag = Tag.builder()
+    public ResponseEntity<?> createTag(TagRequestDTO.Create createTag){
+        Optional<Tutoring> tutoring = tutoringRepository.findById(createTag.getTutoringId());
+        if (tutoring.isPresent()) {
+            Subject subject = tutoring.get().getSubject();
+            if (subject.getTagList().size() < 10) { // 기존 등록태그가 10개 미만일때만 추가 가능
+                Tag tag = Tag.builder()
                         .name(createTag.getTagName())
-                        .subject(subject.get())
+                        .subject(subject)
                         .build();
-            tagRepository.save(tag);
-            return "SUCCESS";
+                tagRepository.save(tag);
+                return ResponseEntity.ok().build();
+            }
         }
-        return "FAIL";
+        return ResponseEntity.badRequest().build();
     }
 
     /* 해당 수업에 달려있는 모든 태그 리스트 */

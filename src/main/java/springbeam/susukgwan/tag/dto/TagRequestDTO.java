@@ -7,7 +7,7 @@ public class TagRequestDTO { /* Tag 요청 DTO 모음 */
     @Getter
     @Setter
     public static class Create { /* Tag 생성 */
-        private Long subjectId;
+        private Long tutoringId;
         private String tagName;
     }
 

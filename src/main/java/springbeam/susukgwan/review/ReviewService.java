@@ -1,6 +1,7 @@
 package springbeam.susukgwan.review;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import springbeam.susukgwan.note.Note;
 import springbeam.susukgwan.note.NoteRepository;
@@ -24,7 +25,7 @@ public class ReviewService {
     private final TagRepository tagRepository;
 
     /* 복습항목 추가 */
-    public String createReview(ReviewRequestDTO.Create createReview) {
+    public ResponseEntity<?> createReview(ReviewRequestDTO.Create createReview) {
 
         Optional<Tutoring> tutoring = tutoringRepository.findById(createReview.getTutoringId());
         Optional<Tag> tag = tagRepository.findById(createReview.getTagId());
@@ -40,15 +41,14 @@ public class ReviewService {
                         .tag(tag.get())
                         .build();
                 reviewRepository.save(review);
-                return "SUCCESS";
+                return ResponseEntity.ok().build();
             }
         }
-
-        return "FAIL";
+        return ResponseEntity.badRequest().build();
     }
 
     /* 복습항목 수정 */
-    public String updateReview(Long reviewId, ReviewRequestDTO.Update updateReview) {
+    public ResponseEntity<?> updateReview(Long reviewId, ReviewRequestDTO.Update updateReview) {
 
         Optional<Review> review = reviewRepository.findById(reviewId);
 
@@ -64,28 +64,31 @@ public class ReviewService {
             }
 
             reviewRepository.save(r);
-            return "SUCCESS";
+            return ResponseEntity.ok().build();
         }
-
-        return "FAIL";
+        return ResponseEntity.badRequest().build();
     }
 
     /* 복습항목 삭제 */
-    public String deleteReview(Long reviewId){
-        reviewRepository.deleteById(reviewId);
-        return "SUCCESS";
+    public ResponseEntity<?> deleteReview(Long reviewId){
+        Optional<Review> review = reviewRepository.findById(reviewId);
+        if (review.isPresent()) {
+            reviewRepository.deleteById(reviewId);
+            return ResponseEntity.ok().build();
+        }
+        return ResponseEntity.badRequest().build();
     }
 
     /* 복습항목 완료여부 체크 */
-    public String checkReview(Long reviewId, Boolean isCompleted) {
+    public ResponseEntity<?> checkReview(Long reviewId, Boolean isCompleted) {
         Optional<Review> review = reviewRepository.findById(reviewId);
         if (review.isPresent()) {
             Review r = review.get();
             r.setIsCompleted(isCompleted);
             reviewRepository.save(r);
-            return "SUCCESS";
+            return ResponseEntity.ok().build();
         }
-        return "FAIL";
+        return ResponseEntity.badRequest().build();
     }
 
     /* 복습내역 불러오기 */
