@@ -1,5 +1,6 @@
 package springbeam.susukgwan.review;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,7 +16,7 @@ public class ReviewController {
     private final ReviewService reviewService;
 
     @PostMapping("")
-    public ResponseEntity<?> createReview (@RequestBody ReviewRequestDTO.Create createReview){
+    public ResponseEntity<?> createReview (@Valid @RequestBody ReviewRequestDTO.Create createReview){
         return reviewService.createReview(createReview);
     }
 
@@ -30,12 +31,12 @@ public class ReviewController {
     }
 
     @PostMapping("/{reviewId}/check")
-    public ResponseEntity<?> checkReview (@PathVariable("reviewId") Long reviewId, @RequestBody ReviewRequestDTO.Check review) {
-        return reviewService.checkReview(reviewId, review.getIsCompleted());
+    public ResponseEntity<?> checkReview (@PathVariable("reviewId") Long reviewId, @Valid @RequestBody ReviewRequestDTO.Check checkReview) {
+        return reviewService.checkReview(reviewId, checkReview);
     }
 
-    @GetMapping("/list")
-    public List<ReviewResponseDTO> getReview (@RequestBody ReviewRequestDTO.ListRequest listRequest){
-        return reviewService.reviewList(listRequest.getTutoringId());
+    @PostMapping("/list")
+    public List<ReviewResponseDTO> listReview (@Valid @RequestBody ReviewRequestDTO.ListRequest listReview){
+        return reviewService.reviewList(listReview);
     }
 }

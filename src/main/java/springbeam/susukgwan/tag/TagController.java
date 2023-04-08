@@ -18,8 +18,18 @@ public class TagController {
         return tagService.createTag(createTag);
     }
 
-    @GetMapping("/list")
-    public TagResponseDTO.CountAndTagList tagList (@RequestBody TagRequestDTO.ListRequest listRequest) {
-        return tagService.tagList(listRequest.getTutoringId());
+    @PostMapping("/list")
+    public TagResponseDTO.CountAndTagList tagList (@Valid @RequestBody TagRequestDTO.ListRequest listTag) {
+        return tagService.tagList(listTag);
+    }
+
+    @PutMapping("/{tagId}")
+    public ResponseEntity<?> updateTag(@PathVariable("tagId") Long tagId, @Valid @RequestBody TagRequestDTO.Update updateTag) {
+        return tagService.updateTag(tagId, updateTag);
+    }
+
+    @DeleteMapping("/{tagId}")
+    public ResponseEntity<?> deleteTag(@PathVariable("tagId") Long tagId) {
+        return tagService.deleteTag(tagId);
     }
 }
