@@ -24,7 +24,8 @@ public class TagService {
         Optional<Tutoring> tutoring = tutoringRepository.findById(createTag.getTutoringId());
         if (tutoring.isPresent()) {
             Subject subject = tutoring.get().getSubject();
-            if (subject.getTagList().size() < 10) { // 기존 등록태그가 10개 미만일때만 추가 가능
+            Boolean existTagFlag = tagRepository.existsByNameAndSubject(createTag.getTagName(), subject); // 중복불가
+            if (subject.getTagList().size() < 10 && !existTagFlag) { // 기존 등록태그가 10개 미만일때만 추가 가능
                 Tag tag = Tag.builder()
                         .name(createTag.getTagName())
                         .subject(subject)

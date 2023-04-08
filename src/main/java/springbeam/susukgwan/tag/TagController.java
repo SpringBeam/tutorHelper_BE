@@ -1,5 +1,6 @@
 package springbeam.susukgwan.tag;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,7 +14,7 @@ public class TagController {
     private final TagService tagService;
 
     @PostMapping("")
-    public ResponseEntity<?> createTag (@RequestBody TagRequestDTO.Create createTag) {
+    public ResponseEntity<?> createTag (@Valid @RequestBody TagRequestDTO.Create createTag) {
         return tagService.createTag(createTag);
     }
 
