@@ -113,9 +113,14 @@ public class ReviewService {
     }
 
     /* 복습내역 불러오기 */
-    public List<ReviewResponseDTO> reviewList(ReviewRequestDTO.ListRequest listReview) {
+    public ResponseEntity<?> reviewList(ReviewRequestDTO.ListRequest listReview) {
         List<Review> reviewList = reviewRepository.GetReviewListbyTutoringId(listReview.getTutoringId());
         List<ReviewResponseDTO> responseList = reviewList.stream().map(o->new ReviewResponseDTO(o)).collect(Collectors.toList());
-        return responseList; // DTO로 반환 (순환참조 방지)
+        if (!responseList.isEmpty()){
+            return ResponseEntity.ok().body(responseList); // DTO로 반환 (순환참조 방지)
+        } else {
+            ResponseMsg message = new ResponseMsg("존재하지 않는 수업이거나 해당수업에 저장된 복습항목이 없습니다.");
+            return ResponseEntity.badRequest().body(message);
+        }
     }
 }

@@ -19,7 +19,7 @@ public class TagController {
     }
 
     @PostMapping("/list")
-    public TagResponseDTO.CountAndTagList tagList (@Valid @RequestBody TagRequestDTO.ListRequest listTag) {
+    public ResponseEntity<?> tagList (@Valid @RequestBody TagRequestDTO.ListRequest listTag) {
         return tagService.tagList(listTag);
     }
 

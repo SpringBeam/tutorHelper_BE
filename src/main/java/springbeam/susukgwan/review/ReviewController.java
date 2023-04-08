@@ -5,9 +5,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import springbeam.susukgwan.review.dto.ReviewRequestDTO;
-import springbeam.susukgwan.review.dto.ReviewResponseDTO;
-
-import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -36,7 +33,7 @@ public class ReviewController {
     }
 
     @PostMapping("/list")
-    public List<ReviewResponseDTO> listReview (@Valid @RequestBody ReviewRequestDTO.ListRequest listReview){
+    public ResponseEntity<?> listReview (@Valid @RequestBody ReviewRequestDTO.ListRequest listReview){
         return reviewService.reviewList(listReview);
     }
 }

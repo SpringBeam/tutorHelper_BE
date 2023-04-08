@@ -45,16 +45,24 @@ public class TagService {
     }
 
     /* 해당 수업에 달려있는 모든 태그 리스트 */
-    public TagResponseDTO.CountAndTagList tagList(TagRequestDTO.ListRequest listTag) {
+    public ResponseEntity<?> tagList(TagRequestDTO.ListRequest listTag) {
         Optional<Tutoring> tutoring = tutoringRepository.findById(listTag.getTutoringId());
         TagResponseDTO.CountAndTagList tagList = new TagResponseDTO.CountAndTagList();
+        ResponseMsg message = new ResponseMsg("");
         if (tutoring.isPresent()) {
             Subject subject = tutoring.get().getSubject();
             tagList.setCount(subject.getTagList().size());
             List<TagResponseDTO.SingleTag> tagDTOList = subject.getTagList().stream().map(o->new TagResponseDTO.SingleTag(o)).collect(Collectors.toList());
             tagList.setTagList(tagDTOList);
+            if (!tagList.getTagList().isEmpty()) {
+                return ResponseEntity.ok().body(tagList);
+            } else {
+                message.setMsg("해당 수업에 저장된 태그가 없습니다.");
+            }
+        } else {
+            message.setMsg("존재하지 않는 수업입니다.");
         }
-        return tagList;
+        return ResponseEntity.badRequest().body(message);
     }
 
     /* 태그 수정 */
