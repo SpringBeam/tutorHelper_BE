@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import springbeam.susukgwan.ResponseMsg;
+import springbeam.susukgwan.ResponseMsgList;
 import springbeam.susukgwan.subject.Subject;
 import springbeam.susukgwan.tag.dto.TagRequestDTO;
 import springbeam.susukgwan.tag.dto.TagResponseDTO;
@@ -36,10 +37,10 @@ public class TagService {
                 tagRepository.save(tag);
                 return ResponseEntity.ok().build();
             } else {
-                message.setMsg("태그가 이미 10개 존재하거나 이미 존재하는 이름의 태그입니다.");
+                message.setMsg(ResponseMsgList.TAG_CONSTRAINTS.getMsg());
             }
         } else {
-            message.setMsg("존재하지 않는 수업입니다.");
+            message.setMsg(ResponseMsgList.NOT_EXIST_TUTORING.getMsg());
         }
         return ResponseEntity.badRequest().body(message);
     }
@@ -57,10 +58,10 @@ public class TagService {
             if (!tagList.getTagList().isEmpty()) {
                 return ResponseEntity.ok().body(tagList);
             } else {
-                message.setMsg("해당 수업에 저장된 태그가 없습니다.");
+                message.setMsg(ResponseMsgList.NOT_EXIST_TAG.getMsg());
             }
         } else {
-            message.setMsg("존재하지 않는 수업입니다.");
+            message.setMsg(ResponseMsgList.NOT_EXIST_TUTORING.getMsg());
         }
         return ResponseEntity.badRequest().body(message);
     }
@@ -75,7 +76,7 @@ public class TagService {
             tagRepository.save(t);
             return ResponseEntity.ok().build();
         } else {
-            message.setMsg("존재하지 않는 태그입니다.");
+            message.setMsg(ResponseMsgList.NOT_EXIST_TAG.getMsg());
         }
         return ResponseEntity.badRequest().body(message);
     }
@@ -88,7 +89,7 @@ public class TagService {
             tagRepository.delete(tag.get());
             return ResponseEntity.ok().build();
         } else {
-            message.setMsg("존재하지 않는 태그입니다.");
+            message.setMsg(ResponseMsgList.NOT_EXIST_TAG.getMsg());
         }
         return ResponseEntity.badRequest().body(message);
     }

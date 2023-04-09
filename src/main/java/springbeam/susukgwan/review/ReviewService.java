@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import springbeam.susukgwan.ResponseMsg;
+import springbeam.susukgwan.ResponseMsgList;
 import springbeam.susukgwan.note.Note;
 import springbeam.susukgwan.note.NoteRepository;
 import springbeam.susukgwan.review.dto.ReviewRequestDTO;
@@ -46,10 +47,10 @@ public class ReviewService {
                 reviewRepository.save(review);
                 return ResponseEntity.ok().build();
             } else {
-                message.setMsg("수업일지가 존재하지 않는 수업입니다.");
+                message.setMsg(ResponseMsgList.NOT_EXIST_NOTE.getMsg());
             }
         } else {
-            message.setMsg("존재하지 않는 수업이거나 태그입니다.");
+            message.setMsg(ResponseMsgList.NOT_EXIST_TUTORING.getMsg() + " 혹은 " + ResponseMsgList.NOT_EXIST_TAG.getMsg());
         }
         return ResponseEntity.badRequest().body(message);
     }
@@ -79,7 +80,7 @@ public class ReviewService {
             message.setMsg(message.getMsg() + "이(가) 수정되었습니다.");
             return ResponseEntity.ok().body(message);
         } else {
-            message.setMsg("존재하지 않는 복습항목이거나 수정할 내용이 없습니다.");
+            message.setMsg(ResponseMsgList.NOT_EXIST_REVIEW.getMsg() + " 혹은 " + ResponseMsgList.UPDATE_NOTHING.getMsg());
         }
         return ResponseEntity.badRequest().body(message);
     }
@@ -92,7 +93,7 @@ public class ReviewService {
             reviewRepository.deleteById(reviewId);
             return ResponseEntity.ok().build();
         } else {
-            message.setMsg("존재하지 않는 복습항목입니다.");
+            message.setMsg(ResponseMsgList.NOT_EXIST_REVIEW.getMsg());
         }
         return ResponseEntity.badRequest().body(message);
     }
@@ -107,7 +108,7 @@ public class ReviewService {
             reviewRepository.save(r);
             return ResponseEntity.ok().build();
         } else {
-            message.setMsg("존재하지 않는 복습항목입니다.");
+            message.setMsg(ResponseMsgList.NOT_EXIST_REVIEW.getMsg());
         }
         return ResponseEntity.badRequest().body(message);
     }
@@ -119,7 +120,7 @@ public class ReviewService {
         if (!responseList.isEmpty()){
             return ResponseEntity.ok().body(responseList); // DTO로 반환 (순환참조 방지)
         } else {
-            ResponseMsg message = new ResponseMsg("존재하지 않는 수업이거나 해당수업에 저장된 복습항목이 없습니다.");
+            ResponseMsg message = new ResponseMsg(ResponseMsgList.NOT_EXIST_TUTORING.getMsg() + " 혹은 " + ResponseMsgList.NOT_EXIST_REVIEW.getMsg());
             return ResponseEntity.badRequest().body(message);
         }
     }
