@@ -1,5 +1,7 @@
 package springbeam.susukgwan.review.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 public class ReviewRequestDTO { /* Review 요청 DTO 모음 */
@@ -7,8 +9,11 @@ public class ReviewRequestDTO { /* Review 요청 DTO 모음 */
     @Getter
     @Setter
     public static class Create { /* Review 생성 */
+        @NotNull
         private Long tutoringId;
+        @NotBlank
         private String body;
+        @NotNull
         private Long tagId;
     }
 
@@ -22,12 +27,14 @@ public class ReviewRequestDTO { /* Review 요청 DTO 모음 */
     @Getter
     @Setter
     public static class Check { /* Review 완료여부 체크 */
+        @NotNull
         private Boolean isCompleted;
     }
 
     @Getter
     @Setter
     public static class ListRequest { /* Review 리스트 */
+        @NotNull
         private Long tutoringId;
     }
 }

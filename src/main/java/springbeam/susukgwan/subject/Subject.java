@@ -26,7 +26,7 @@ public class Subject {
     private Long id; // 고유번호
     private String name; // 과목명
     private Long userId; // 튜터고유번호
-//    @OneToMany(mappedBy = "subject", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+//    @OneToMany(mappedBy = "subject", fetch = FetchType.LAZY)
 //    private final List<Tutoring> tutoringList = new ArrayList<>(); // 이 과목에 개설된 수업들
     @OneToMany(mappedBy = "subject", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private final List<Tag> tagList = new ArrayList<>(); // 이 과목에 달린 태그들

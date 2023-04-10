@@ -1,9 +1,12 @@
 package springbeam.susukgwan.tag;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import springbeam.susukgwan.ResponseMsg;
+import springbeam.susukgwan.ResponseMsgList;
 import springbeam.susukgwan.subject.Subject;
-import springbeam.susukgwan.subject.SubjectRepository;
 import springbeam.susukgwan.tag.dto.TagRequestDTO;
 import springbeam.susukgwan.tag.dto.TagResponseDTO;
 import springbeam.susukgwan.tutoring.Tutoring;
@@ -17,33 +20,69 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class TagService {
     private final TagRepository tagRepository;
-    private final SubjectRepository subjectRepository;
     private final TutoringRepository tutoringRepository;
 
     /* 태그 추가 */
-    public String createTag(TagRequestDTO.Create createTag){
-        Optional<Subject> subject = subjectRepository.findById(createTag.getSubjectId());
-        if (subject.isPresent() && subject.get().getTagList().size() < 10) { // 기존 등록태그가 10개 미만일때만 추가 가능
-            Tag tag = Tag.builder()
+    public ResponseEntity<?> createTag(TagRequestDTO.Create createTag){
+        Optional<Tutoring> tutoring = tutoringRepository.findById(createTag.getTutoringId());
+        if (tutoring.isPresent()) {
+            Subject subject = tutoring.get().getSubject();
+            Boolean existTagFlag = tagRepository.existsByNameAndSubject(createTag.getTagName(), subject); // 중복불가
+            if (subject.getTagList().size() < 10 && !existTagFlag) { // 기존 등록태그가 10개 미만일때만 추가 가능
+                Tag tag = Tag.builder()
                         .name(createTag.getTagName())
-                        .subject(subject.get())
+                        .subject(subject)
                         .build();
-            tagRepository.save(tag);
-            return "SUCCESS";
+                tagRepository.save(tag);
+                return ResponseEntity.ok().build();
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseMsg(ResponseMsgList.TAG_CONSTRAINTS.getMsg()));
+            }
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_TUTORING.getMsg()));
         }
-        return "FAIL";
     }
 
     /* 해당 수업에 달려있는 모든 태그 리스트 */
-    public TagResponseDTO.CountAndTagList tagList(Long tutoringId) {
-        Optional<Tutoring> tutoring = tutoringRepository.findById(tutoringId);
+    public ResponseEntity<?> tagList(TagRequestDTO.ListRequest listTag) {
+        Optional<Tutoring> tutoring = tutoringRepository.findById(listTag.getTutoringId());
         TagResponseDTO.CountAndTagList tagList = new TagResponseDTO.CountAndTagList();
         if (tutoring.isPresent()) {
             Subject subject = tutoring.get().getSubject();
             tagList.setCount(subject.getTagList().size());
             List<TagResponseDTO.SingleTag> tagDTOList = subject.getTagList().stream().map(o->new TagResponseDTO.SingleTag(o)).collect(Collectors.toList());
             tagList.setTagList(tagDTOList);
+            if (!tagList.getTagList().isEmpty()) {
+                return ResponseEntity.ok().body(tagList);
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_TAG.getMsg()));
+            }
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_TUTORING.getMsg()));
         }
-        return tagList;
+    }
+
+    /* 태그 수정 */
+    public ResponseEntity<?> updateTag(Long tagId, TagRequestDTO.Update updateTag) {
+        Optional<Tag> tag = tagRepository.findById(tagId);
+        if (tag.isPresent()) {
+            Tag t = tag.get();
+            t.setName(updateTag.getTagName());
+            tagRepository.save(t);
+            return ResponseEntity.ok().build();
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_TAG.getMsg()));
+        }
+    }
+
+    /* 태그 삭제 */
+    public ResponseEntity<?> deleteTag(Long tagId) {
+        Optional<Tag> tag = tagRepository.findById(tagId);
+        if (tag.isPresent()) {
+            tagRepository.delete(tag.get());
+            return ResponseEntity.ok().build();
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_TAG.getMsg()));
+        }
     }
 }
