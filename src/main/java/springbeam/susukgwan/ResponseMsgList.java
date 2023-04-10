@@ -14,7 +14,12 @@ public enum ResponseMsgList {
     NOT_EXIST_NOTE("수업일지가 존재하지 않습니다."),
     NOT_EXIST_REVIEW("복습항목이 존재하지 않습니다."),
     TAG_CONSTRAINTS("태그가 이미 10개 존재하거나 이미 존재하는 이름의 태그입니다."),
-    UPDATE_NOTHING("수정할 내용이 없습니다.")
+    UPDATE_NOTHING("수정할 내용이 없습니다."),
+    TUTEE_ALREADY_EXISTS("학생이 이미 수업에 등록되었습니다."),
+    PARENT_ALREADY_EXISTS("학부모가 이미 수업에 등록되었습니다."),
+    NO_SUCH_USER_IN_DB("해당 유저의 정보가 DB에 존재하지 않습니다."),
+    NO_SUCH_INVITATION_CODE("해당하는 초대 코드가 존재하지 않습니다."),
+    NO_SUCH_TUTORING("해당 수업이 존재하지 않습니다.")
     ;
 
     private final String msg;

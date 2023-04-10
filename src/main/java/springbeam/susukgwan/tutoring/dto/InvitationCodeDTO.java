@@ -7,6 +7,7 @@ import lombok.*;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class DeleteTutoringDTO {
-    private Long tutoringId;
+public class InvitationCodeDTO {
+    // request, response DTO
+    private String invitationCode;
 }
