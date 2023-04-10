@@ -18,6 +18,4 @@ public enum ResponseMsgList {
     ;
 
     private final String msg;
-    public static final String notnullMessage = "필수 입력 항목입니다.";
-    public static final String notblankMessage = "필수 입력 항목이며 공백을 제외한 문자를 하나 이상 포함해야 합니다.";
 }
