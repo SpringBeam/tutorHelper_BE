@@ -21,7 +21,7 @@ public class Tag {
     private Long id;
     @Column(nullable = false)
     private String name;
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "subject_id")
     private Subject subject;
 }

@@ -27,9 +27,9 @@ public class Note {
     private Long id;
 
     @CreatedDate
-    private LocalDateTime dateTime;
+    private LocalDateTime dateTime; // 생성시간
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "tutoring_id")
     private Tutoring tutoring; // 수업
 

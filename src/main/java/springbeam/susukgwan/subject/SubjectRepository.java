@@ -7,5 +7,5 @@ import java.util.Optional;
 
 @Repository
 public interface SubjectRepository extends JpaRepository<Subject, Long> {
-    Optional<Subject> findByNameAndUserId(String name, Long userId);
+    Optional<Subject> findByNameAndTutorId(String name, Long tutorId);
 }

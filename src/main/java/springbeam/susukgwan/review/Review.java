@@ -21,9 +21,10 @@ public class Review {
     @Column(nullable = false)
     private String body; // 복습내용
 
+    @Column(nullable = false)
     private Boolean isCompleted; // 완료여부 (true:완료, false:미완료)
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "note_id")
     private Note note; // 수업일지
 

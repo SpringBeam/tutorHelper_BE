@@ -1,5 +1,6 @@
 package springbeam.susukgwan;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
 import org.springframework.context.NoSuchMessageException;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@Slf4j
 @RestControllerAdvice
 public class ApiControllerAdvice {
 
@@ -30,7 +32,10 @@ public class ApiControllerAdvice {
     public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex){
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getAllErrors()
-                .forEach(c -> errors.put(((FieldError) c).getField(), getErrorMessage(c)));
+                .forEach(c -> {
+                    errors.put(((FieldError) c).getField(), getErrorMessage(c));
+                    log.error(c.toString());
+                });
         return ResponseEntity.badRequest().body(errors);
     }
 
@@ -49,6 +54,8 @@ public class ApiControllerAdvice {
 
         String errorMessage = messageSource.getMessage("typeMismatch", new Object[] {rightType}, Locale.KOREA);
         errors.put(errorField, errorMessage);
+
+        log.error(ex.toString());
 
         return ResponseEntity.badRequest().body(errors);
     }
