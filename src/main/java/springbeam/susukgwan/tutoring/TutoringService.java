@@ -105,11 +105,11 @@ public class TutoringService {
     /* Subject : 기존에 있는거면 그거 반환, 없으면 새로 저장해서 반환 */
     public Subject findSubject(String subjectName, Long tutorId) {
         Subject subject = new Subject();
-        Optional<Subject> duplicateSubject = subjectRepository.findByNameAndUserId(subjectName, tutorId); // 입력한 과목명, 튜터아이디로 이미 등록된 과목인지 확인
+        Optional<Subject> duplicateSubject = subjectRepository.findByNameAndTutorId(subjectName, tutorId); // 입력한 과목명, 튜터아이디로 이미 등록된 과목인지 확인
         if (duplicateSubject.isEmpty()) { // 기존에 없었으면 과목 새로 만듦
             subject = Subject.builder()
                     .name(subjectName)
-                    .userId(tutorId)
+                    .tutorId(tutorId)
                     .build();
             subjectRepository.save(subject); // subject 저장
         } else { // 기존에 있었으면 있던거 가져옴
