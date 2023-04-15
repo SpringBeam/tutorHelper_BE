@@ -25,41 +25,46 @@ public class TagService {
     /* 태그 추가 */
     public ResponseEntity<?> createTag(TagRequestDTO.Create createTag){
         Optional<Tutoring> tutoring = tutoringRepository.findById(createTag.getTutoringId());
-        if (tutoring.isPresent()) {
-            Subject subject = tutoring.get().getSubject();
-            Boolean existTagFlag = tagRepository.existsByNameAndSubject(createTag.getTagName(), subject); // 중복불가
-            if (subject.getTagList().size() < 10 && !existTagFlag) { // 기존 등록태그가 10개 미만일때만 추가 가능
-                Tag tag = Tag.builder()
-                        .name(createTag.getTagName())
-                        .subject(subject)
-                        .build();
-                tagRepository.save(tag);
-                return ResponseEntity.ok().build();
-            } else {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseMsg(ResponseMsgList.TAG_CONSTRAINTS.getMsg()));
-            }
-        } else {
+
+        if (tutoring.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_TUTORING.getMsg()));
         }
+
+        Subject subject = tutoring.get().getSubject();
+        Boolean existTagFlag = tagRepository.existsByNameAndSubject(createTag.getTagName(), subject); // 중복불가
+
+        if (subject.getTagList().size() < 10 && !existTagFlag) { // 기존 등록태그가 10개 미만일때만 추가 가능
+            Tag tag = Tag.builder()
+                    .name(createTag.getTagName())
+                    .subject(subject)
+                    .build();
+            tagRepository.save(tag);
+            return ResponseEntity.ok().build();
+        } else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseMsg(ResponseMsgList.TAG_CONSTRAINTS.getMsg()));
+        }
+
     }
 
     /* 해당 수업에 달려있는 모든 태그 리스트 */
     public ResponseEntity<?> tagList(TagRequestDTO.ListRequest listTag) {
         Optional<Tutoring> tutoring = tutoringRepository.findById(listTag.getTutoringId());
         TagResponseDTO.CountAndTagList tagList = new TagResponseDTO.CountAndTagList();
-        if (tutoring.isPresent()) {
-            Subject subject = tutoring.get().getSubject();
-            tagList.setCount(subject.getTagList().size());
-            List<TagResponseDTO.SingleTag> tagDTOList = subject.getTagList().stream().map(o->new TagResponseDTO.SingleTag(o)).collect(Collectors.toList());
-            tagList.setTagList(tagDTOList);
-            if (!tagList.getTagList().isEmpty()) {
-                return ResponseEntity.ok().body(tagList);
-            } else {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_TAG.getMsg()));
-            }
-        } else {
+
+        if (tutoring.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_TUTORING.getMsg()));
         }
+
+        Subject subject = tutoring.get().getSubject();
+        tagList.setCount(subject.getTagList().size());
+        List<TagResponseDTO.SingleTag> tagDTOList = subject.getTagList().stream().map(o->new TagResponseDTO.SingleTag(o)).collect(Collectors.toList());
+        tagList.setTagList(tagDTOList);
+
+        if (tagList.getTagList().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_TAG.getMsg()));
+        }
+
+        return ResponseEntity.ok().body(tagList);
     }
 
     /* 태그 수정 */

@@ -14,4 +14,16 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
             nativeQuery = true
     )
     List<Review> GetReviewListbyTutoringId(@Param(value="tutoringId") Long tutoringId);
+
+    @Query(
+            value = "SELECT t.tutor_id " +
+                    "FROM susukgwan.tutoring AS t " +
+                    "JOIN susukgwan.note AS n " +
+                    "ON t.id = n.tutoring_id " +
+                    "JOIN susukgwan.review AS r " +
+                    "on n.id = r.note_id " +
+                    "WHERE r.id = :reviewId",
+            nativeQuery = true
+    )
+    Long GetTutorIdOfReview(@Param(value = "reviewId") Long reviewId);
 }
