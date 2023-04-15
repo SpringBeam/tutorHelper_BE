@@ -21,7 +21,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .excludePathPatterns("/api/tag", "/api/tag/list") // 인터셉터가 가로채지 않는 url
                 .addPathPatterns("/api/tag/**"); // 인터셉터가 가로채는 url (authorization 확인이 필요한 api)
         registry.addInterceptor(reviewAuthInterceptor)
-                .excludePathPatterns("/api/review", "api/review/list")
+                .excludePathPatterns("/api/review", "/api/review/list")
                 .addPathPatterns("/api/review/**");
     }
 
