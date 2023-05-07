@@ -45,4 +45,8 @@ public class TutoringController {
     public ResponseEntity withdrawFromTutoring(@PathVariable("tutoringId") Long tutoringId) {
         return tutoringService.withdrawFromTutoring(tutoringId);
     }
+    @GetMapping("/list")
+    public ResponseEntity getTutoringList() {
+        return tutoringService.getTutoringList();
+    }
 }
