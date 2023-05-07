@@ -3,7 +3,6 @@ package springbeam.susukgwan.tutoring;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -21,7 +20,10 @@ import springbeam.susukgwan.user.UserRepository;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -55,7 +57,7 @@ public class TutoringService {
         Iterator<String> it = Arrays.stream(split).iterator();
         while (it.hasNext()) {
             String[] each = it.next().strip().split(" ");
-            DayOfWeek dayOfWeek = DayOfWeek.of(Integer.valueOf(each[0]));
+            DayOfWeek dayOfWeek = DayOfWeek.of(Integer.parseInt(each[0]));
             LocalTime startTime = LocalTime.parse(each[1]);
             LocalTime endTime = LocalTime.parse(each[2]);
             Time regularTime = Time.builder()
@@ -136,9 +138,7 @@ public class TutoringService {
             }
             // If an invitation code for the role is already issued, delete it.
             Optional<InvitationCode> oldCodeOpt = invitationCodeRepository.findByTutoringIdAndRole(tutoringId, role);
-            if (oldCodeOpt.isPresent()) {
-                invitationCodeRepository.delete(oldCodeOpt.get());
-            }
+            oldCodeOpt.ifPresent(invitationCode -> invitationCodeRepository.delete(invitationCode));
             // generate new random code(not duplicated)
             String newCode;
             do {
@@ -204,17 +204,94 @@ public class TutoringService {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NO_SUCH_TUTORING.getMsg()));
         }
         Tutoring tutoring = tutoringOptional.get();
-        if (tutoring.getTuteeId() == userId) {
+        if (tutoring.getTuteeId().equals(userId)) {
             tutoring.setTuteeId(null);
             tutoringRepository.save(tutoring);
             return ResponseEntity.ok().build();
-        } else if (tutoring.getParentId() == userId) {
+        } else if (tutoring.getParentId().equals(userId)) {
             tutoring.setParentId(null);
             tutoringRepository.save(tutoring);
             return ResponseEntity.ok().build();
         } else {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
+    }
+    /* get tutoring list of a tutor or tutee */
+    public ResponseEntity<?> getTutoringList() {
+        String userIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
+        Long userId = Long.parseLong(userIdStr);
+        Optional<User> userOptional = userRepository.findById(userId);
+        if (userOptional.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(new ResponseMsg(ResponseMsgList.NO_SUCH_USER_IN_DB.getMsg()));
+        }
+        User user = userOptional.get();
+        if (user.getRole() == Role.TUTOR) {
+            List<Tutoring> tutoringList = tutoringRepository.findAllByTutorId(user.getId());
+            List<TutoringInfoResponseDTO.Tutor> tutoringInfos = tutoringList.stream().map(t -> {
+                TutoringInfoResponseDTO.Tutor DTOTutor = TutoringInfoResponseDTO.Tutor.builder()
+                        .tutoringId(t.getId())
+                        .subject(t.getSubject().getName())
+                        .tuteeName("")
+                        .dayTime(makeDayTimeString(t.getTimes()))
+                        .build();
+                if (userRepository.findById(t.getTuteeId()).isPresent()) {
+                    DTOTutor.setTuteeName(userRepository.findById(t.getTuteeId()).get().getName());
+                }
+                // 학생이 없으면 빈 문자열
+                return DTOTutor;
+            }).collect(Collectors.toList());
+            return ResponseEntity.ok(tutoringInfos);
+        } else if (user.getRole() == Role.TUTEE) {
+            List<Tutoring> tutoringList = tutoringRepository.findAllByTuteeId(user.getId());
+            List<TutoringInfoResponseDTO.Tutee> tutoringInfos = tutoringList.stream().map(t -> {
+                TutoringInfoResponseDTO.Tutee DTOTutee = TutoringInfoResponseDTO.Tutee.builder()
+                        .tutoringId(t.getId())
+                        .subject(t.getSubject().getName())
+                        .tutorName("")
+                        .dayTime(makeDayTimeString(t.getTimes()))
+                        .build();
+                if (userRepository.findById(t.getTutorId()).isPresent()) {
+                    DTOTutee.setTutorName(userRepository.findById(t.getTutorId()).get().getName());
+                }
+                return DTOTutee;
+            }).collect(Collectors.toList());
+            return ResponseEntity.ok(tutoringInfos);
+        }
+        else if (user.getRole() == Role.PARENT) {
+            List<Tutoring> tutoringList = tutoringRepository.findAllByParentId(user.getId());
+            List<TutoringInfoResponseDTO.Parent> tutoringInfos = tutoringList.stream().map(t -> {
+                TutoringInfoResponseDTO.Parent DTOParent = TutoringInfoResponseDTO.Parent.builder()
+                        .tutoringId(t.getId())
+                        .subject(t.getSubject().getName())
+                        .tutorName("")
+                        .tuteeName("")
+                        .dayTime(makeDayTimeString(t.getTimes()))
+                        .build();
+                if (userRepository.findById(t.getTutorId()).isPresent()) {
+                    DTOParent.setTutorName(userRepository.findById(t.getTutorId()).get().getName());
+                }
+                if (userRepository.findById(t.getTuteeId()).isPresent()) {
+                    DTOParent.setTuteeName(userRepository.findById(t.getTuteeId()).get().getName());
+                }
+                return DTOParent;
+            }).collect(Collectors.toList());
+            return ResponseEntity.ok(tutoringInfos);
+        }
+        else {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+    }
+    private String makeDayTimeString(List<Time> timeList) {
+        StringBuilder dayTimeScheduleBuilder = new StringBuilder();
+        for (Time time: timeList) {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
+            // e.g. 1 13:50 15:50, ...
+            dayTimeScheduleBuilder.append(time.getDay().getValue()).append(" ").append(time.getStartTime().format(formatter)).append(" ").append(time.getEndTime().format(formatter)).append(", ");
+        }
+        String dayTimeSchedule = dayTimeScheduleBuilder.toString();
+        int lastIdx = dayTimeSchedule.length() - 1;
+        dayTimeSchedule = dayTimeSchedule.substring(0, lastIdx - 1);
+        return dayTimeSchedule;
     }
     private String generateRandomAlphaNumericString() {
         int leftLimit = 48; // '0'
