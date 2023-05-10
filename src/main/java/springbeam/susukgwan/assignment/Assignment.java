@@ -9,6 +9,7 @@ import lombok.experimental.SuperBuilder;
 import springbeam.susukgwan.note.Note;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Entity
 @Table(name = "assignment")
@@ -31,8 +32,9 @@ public class Assignment {
     @Column(nullable = false)
     private LocalDate endDate; // 마감일시 (데드라인)
 
-//    @Column(nullable = false)
-//    private Long frequency; // 제출 빈도 (제출하는 요일)
+    @Column(nullable = false)
+    @Convert(converter = LongListConverter.class)
+    private List<Long> frequency; // 제출 빈도 (제출하는 요일)
 
     @Column(nullable = false)
     private String amount; // 매번 제출하는 분량

@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.util.List;
 
 public class AssignmentRequestDTO {
 
@@ -20,7 +21,8 @@ public class AssignmentRequestDTO {
         private LocalDate startDate;
         @NotNull
         private LocalDate endDate;
-//        private Long frequency;
+        @NotNull
+        private List<Long> frequency;
         @NotNull
         private String amount; // 빈칸 가능
     }
@@ -31,7 +33,7 @@ public class AssignmentRequestDTO {
         private String body;
         private LocalDate startDate;
         private LocalDate endDate;
-        //        private Long frequency;
+        private List<Long> frequency;
         private String amount;
     }
 }

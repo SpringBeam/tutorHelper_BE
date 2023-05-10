@@ -32,6 +32,7 @@ public class AssignmentService {
                         .body(createAssignment.getBody())
                         .startDate(createAssignment.getStartDate())
                         .endDate(createAssignment.getEndDate())
+                        .frequency(createAssignment.getFrequency())
                         .amount(createAssignment.getAmount())
                         .isCompleted(false)
                         .note(note.get())
@@ -69,6 +70,10 @@ public class AssignmentService {
 
         if (updateAssignment.getEndDate() != null) {
             a.setEndDate(updateAssignment.getEndDate());
+        }
+
+        if (updateAssignment.getFrequency() != null) {
+            a.setFrequency(updateAssignment.getFrequency());
         }
 
         if (updateAssignment.getAmount() != null) {
