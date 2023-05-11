@@ -1,25 +1,31 @@
 package springbeam.susukgwan.assignment;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import springbeam.susukgwan.ResponseMsg;
 import springbeam.susukgwan.ResponseMsgList;
+import springbeam.susukgwan.S3Upload;
 import springbeam.susukgwan.assignment.dto.AssignmentRequestDTO;
 import springbeam.susukgwan.note.Note;
 import springbeam.susukgwan.note.NoteRepository;
 import springbeam.susukgwan.tutoring.Tutoring;
 import springbeam.susukgwan.tutoring.TutoringRepository;
 
+import java.io.IOException;
 import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AssignmentService {
     private final AssignmentRepository assignmentRepository;
     private final TutoringRepository tutoringRepository;
     private final NoteRepository noteRepository;
+    private final S3Upload s3Upload;
 
     /* 숙제 추가 */
     public ResponseEntity<?> createAssignment(AssignmentRequestDTO.Create createAssignment) {
@@ -93,5 +99,11 @@ public class AssignmentService {
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_ASSIGNMENT.getMsg()));
         }
+    }
+
+    public ResponseEntity<?> submitFiles (MultipartFile multipartFile) throws IOException {
+        log.info(multipartFile.toString());
+        String uploadTest = s3Upload.upload(multipartFile);
+        return ResponseEntity.ok(uploadTest);
     }
 }
