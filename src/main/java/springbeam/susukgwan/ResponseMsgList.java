@@ -22,7 +22,8 @@ public enum ResponseMsgList {
     NO_SUCH_INVITATION_CODE("해당하는 초대 코드가 존재하지 않습니다."),
     NO_SUCH_TUTORING("해당 수업이 존재하지 않습니다."),
     NOT_AUTHORIZED("권한이 없습니다."),
-    NOT_EXIST_ASSIGNMENT("숙제가 존재하지 않습니다.")
+    NOT_EXIST_ASSIGNMENT("숙제가 존재하지 않습니다."),
+    NOT_EXIST_SUBMIT("숙제 인증피드가 존재하지 않습니다.")
     ;
 
     private final String msg;

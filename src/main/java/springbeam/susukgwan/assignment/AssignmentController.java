@@ -35,4 +35,9 @@ public class AssignmentController {
     public ResponseEntity<?> submitFiles (@PathVariable("assignmentId") Long assignmentId, @RequestParam("images") List<MultipartFile> multipartFileList) throws IOException {
         return assignmentService.submitFiles(assignmentId, multipartFileList);
     }
+
+    @DeleteMapping("/submit/{submitId}")
+    public ResponseEntity<?> deleteSubmit (@PathVariable("submitId") Long submitId) {
+        return assignmentService.deleteSubmit(submitId);
+    }
 }

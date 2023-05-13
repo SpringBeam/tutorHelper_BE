@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import springbeam.susukgwan.ResponseMsg;
 import springbeam.susukgwan.ResponseMsgList;
-import springbeam.susukgwan.S3Upload;
+import springbeam.susukgwan.S3Service;
 import springbeam.susukgwan.assignment.dto.AssignmentRequestDTO;
 import springbeam.susukgwan.note.Note;
 import springbeam.susukgwan.note.NoteRepository;
@@ -29,7 +29,7 @@ public class AssignmentService {
     private final AssignmentRepository assignmentRepository;
     private final TutoringRepository tutoringRepository;
     private final NoteRepository noteRepository;
-    private final S3Upload s3Upload;
+    private final S3Service s3Service;
     private final SubmitRepository submitRepository;
 
     /* 숙제 추가 */
@@ -106,13 +106,14 @@ public class AssignmentService {
         }
     }
 
+    /* 숙제 인증피드 등록 */
     public ResponseEntity<?> submitFiles (Long assignmentId, List<MultipartFile> multipartFileList) throws IOException {
         Optional<Assignment> assignment = assignmentRepository.findById(assignmentId);
         if (assignment.isPresent()) {
             List<String> imageUrlList = new ArrayList<>();
 
             for (MultipartFile multipartFile : multipartFileList) {
-                imageUrlList.add(s3Upload.upload(multipartFile));
+                imageUrlList.add(s3Service.upload(multipartFile));
             }
 
             Submit submit = Submit.builder()
@@ -126,6 +127,21 @@ public class AssignmentService {
             return ResponseEntity.ok().build();
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_ASSIGNMENT.getMsg()));
+        }
+    }
+
+    /* 숙제 인증피드 삭제 */
+    public ResponseEntity<?> deleteSubmit (Long submitId) {
+        Optional<Submit> submit = submitRepository.findById(submitId);
+        if (submit.isPresent()) {
+            List<String> S3Urls = submit.get().getImageUrl();
+            for (String url : S3Urls) {
+                s3Service.delete(url); // S3에 업로드된 이미지들 삭제 먼저
+            }
+            submitRepository.deleteById(submitId); // 숙제 인증피드 삭제
+            return ResponseEntity.ok().build();
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_SUBMIT.getMsg()));
         }
     }
 }
