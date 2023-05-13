@@ -16,6 +16,10 @@ import springbeam.susukgwan.tutoring.Tutoring;
 import springbeam.susukgwan.tutoring.TutoringRepository;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Slf4j
@@ -26,6 +30,7 @@ public class AssignmentService {
     private final TutoringRepository tutoringRepository;
     private final NoteRepository noteRepository;
     private final S3Upload s3Upload;
+    private final SubmitRepository submitRepository;
 
     /* 숙제 추가 */
     public ResponseEntity<?> createAssignment(AssignmentRequestDTO.Create createAssignment) {
@@ -101,9 +106,26 @@ public class AssignmentService {
         }
     }
 
-    public ResponseEntity<?> submitFiles (MultipartFile multipartFile) throws IOException {
-        log.info(multipartFile.toString());
-        String uploadTest = s3Upload.upload(multipartFile);
-        return ResponseEntity.ok(uploadTest);
+    public ResponseEntity<?> submitFiles (Long assignmentId, List<MultipartFile> multipartFileList) throws IOException {
+        Optional<Assignment> assignment = assignmentRepository.findById(assignmentId);
+        if (assignment.isPresent()) {
+            List<String> imageUrlList = new ArrayList<>();
+
+            for (MultipartFile multipartFile : multipartFileList) {
+                imageUrlList.add(s3Upload.upload(multipartFile));
+            }
+
+            Submit submit = Submit.builder()
+                    .assignment(assignment.get())
+                    .dateTime(LocalDateTime.now(ZoneId.of("Asia/Seoul")))
+                    .rate(0L)
+                    .imageUrl(imageUrlList)
+                    .build();
+
+            submitRepository.save(submit);
+            return ResponseEntity.ok().build();
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_ASSIGNMENT.getMsg()));
+        }
     }
 }

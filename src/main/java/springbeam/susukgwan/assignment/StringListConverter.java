@@ -8,14 +8,14 @@ import jakarta.persistence.AttributeConverter;
 import java.io.IOException;
 import java.util.List;
 
-public class LongListConverter implements AttributeConverter<List<Long>, String> {
+public class StringListConverter implements AttributeConverter<List<String>, String> {
     private static final ObjectMapper mapper = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
 
-    /* DB 테이블에 저장될 때 List<Long> -> String */
+    /* DB 테이블에 저장될 때 List<String> -> String */
     @Override
-    public String convertToDatabaseColumn(List<Long> attribute) {
+    public String convertToDatabaseColumn(List<String> attribute) {
         try {
             return mapper.writeValueAsString(attribute);
         } catch (JsonProcessingException e) {
@@ -23,9 +23,9 @@ public class LongListConverter implements AttributeConverter<List<Long>, String>
         }
     }
 
-    /* DB 테이블에서 가져올 때 String -> List<Long> */
+    /* DB 테이블에서 가져올 때 String -> List<String> */
     @Override
-    public List<Long> convertToEntityAttribute(String dbData) {
+    public List<String> convertToEntityAttribute(String dbData) {
         try {
             return mapper.readValue(dbData, List.class);
         } catch (IOException e) {
