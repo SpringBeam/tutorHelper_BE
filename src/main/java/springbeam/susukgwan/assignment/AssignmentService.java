@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import springbeam.susukgwan.ResponseMsg;
@@ -18,6 +19,7 @@ import springbeam.susukgwan.tutoring.TutoringRepository;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -108,12 +110,23 @@ public class AssignmentService {
 
     /* 숙제 인증피드 등록 */
     public ResponseEntity<?> submitFiles (Long assignmentId, List<MultipartFile> multipartFileList) throws IOException {
+
+        if (multipartFileList.size() > 3) { // 인증사진은 최대 3개
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseMsg(ResponseMsgList.SUBMIT_CONSTRAINTS.getMsg()));
+        }
+
         Optional<Assignment> assignment = assignmentRepository.findById(assignmentId);
         if (assignment.isPresent()) {
             List<String> imageUrlList = new ArrayList<>();
 
+            String now = LocalDateTime.now(ZoneId.of("Asia/Seoul")).format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+            String userId = SecurityContextHolder.getContext().getAuthentication().getName();
+
+            int index = 1;
             for (MultipartFile multipartFile : multipartFileList) {
-                imageUrlList.add(s3Service.upload(multipartFile));
+                String fileName = now + "-" + assignmentId + "-" + userId + "-(" + index + ")"; // 파일명 지정 (format : 날짜-숙제ID-유저ID-(순서))
+                imageUrlList.add(s3Service.upload(multipartFile, fileName));
+                index++;
             }
 
             Submit submit = Submit.builder()

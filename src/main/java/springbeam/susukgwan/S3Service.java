@@ -11,7 +11,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.net.URLDecoder;
-import java.util.UUID;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -23,15 +22,13 @@ public class S3Service {
     private final AmazonS3 amazonS3;
 
     /* 파일 업로드 */
-    public String upload(MultipartFile multipartFile) throws IOException {
-        String s3FileName = UUID.randomUUID() + "-" + multipartFile.getOriginalFilename();
-
+    public String upload(MultipartFile multipartFile, String s3FileName) throws IOException {
         ObjectMetadata objMeta = new ObjectMetadata();
         objMeta.setContentLength(multipartFile.getInputStream().available());
 
         amazonS3.putObject(bucket, s3FileName, multipartFile.getInputStream(), objMeta);
 
-        return URLDecoder.decode(amazonS3.getUrl(bucket, s3FileName).toString(), "utf-8"); // url에 한글이 포함되어있을 경우 깨짐 방지
+        return URLDecoder.decode(amazonS3.getUrl(bucket, s3FileName).toString(), "utf-8"); // url에 한글&특수문자가 포함되어있을 경우 깨짐 방지
     }
 
     /* 파일 삭제 */

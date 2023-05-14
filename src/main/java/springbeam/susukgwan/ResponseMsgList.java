@@ -23,7 +23,8 @@ public enum ResponseMsgList {
     NO_SUCH_TUTORING("해당 수업이 존재하지 않습니다."),
     NOT_AUTHORIZED("권한이 없습니다."),
     NOT_EXIST_ASSIGNMENT("숙제가 존재하지 않습니다."),
-    NOT_EXIST_SUBMIT("숙제 인증피드가 존재하지 않습니다.")
+    NOT_EXIST_SUBMIT("숙제 인증피드가 존재하지 않습니다."),
+    SUBMIT_CONSTRAINTS("파일은 3개 이내로 제출해주세요.")
     ;
 
     private final String msg;
