@@ -42,7 +42,9 @@ public class SubmitService {
 
             int index = 1;
             for (MultipartFile multipartFile : multipartFileList) {
-                String fileName = now + "-" + assignmentId + "-" + userId + "-(" + index + ")"; // 파일명 지정 (format : 날짜-숙제ID-유저ID-(순서))
+                String originalFilename = multipartFile.getOriginalFilename();
+                String fileFormat = originalFilename.substring(originalFilename.lastIndexOf("."));
+                String fileName = now + "-" + assignmentId + "-" + userId + "-(" + index + ")" + fileFormat; // 파일명 지정 (format : 날짜-숙제ID-유저ID-(순서).확장자)
                 imageUrlList.add(s3Service.upload(multipartFile, fileName));
                 index++;
             }
