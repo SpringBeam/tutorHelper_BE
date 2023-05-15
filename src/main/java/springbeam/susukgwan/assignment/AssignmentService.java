@@ -8,12 +8,15 @@ import org.springframework.stereotype.Service;
 import springbeam.susukgwan.ResponseMsg;
 import springbeam.susukgwan.ResponseMsgList;
 import springbeam.susukgwan.assignment.dto.AssignmentRequestDTO;
+import springbeam.susukgwan.assignment.dto.SubmitResponseDTO;
 import springbeam.susukgwan.note.Note;
 import springbeam.susukgwan.note.NoteRepository;
 import springbeam.susukgwan.tutoring.Tutoring;
 import springbeam.susukgwan.tutoring.TutoringRepository;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -22,6 +25,7 @@ public class AssignmentService {
     private final AssignmentRepository assignmentRepository;
     private final TutoringRepository tutoringRepository;
     private final NoteRepository noteRepository;
+    private final SubmitRepository submitRepository;
 
     /* 숙제 추가 */
     public ResponseEntity<?> createAssignment(AssignmentRequestDTO.Create createAssignment) {
@@ -95,5 +99,23 @@ public class AssignmentService {
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_ASSIGNMENT.getMsg()));
         }
+    }
+
+    /* 숙제의 모든 인증피드 리스트 */
+    public ResponseEntity<?> submitListOfAssignment (Long assignmentId) {
+        Optional<Assignment> assignment = assignmentRepository.findById(assignmentId);
+
+        if (assignment.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_ASSIGNMENT.getMsg()));
+        }
+
+        List<Submit> submitList = submitRepository.GetSubmitListByAssignmentId(assignmentId);
+        List<SubmitResponseDTO> responseList = submitList.stream().map(o->new SubmitResponseDTO(o)).collect(Collectors.toList());
+
+        if (responseList.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_SUBMIT.getMsg()));
+        }
+
+        return ResponseEntity.ok().body(responseList);
     }
 }

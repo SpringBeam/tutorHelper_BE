@@ -47,4 +47,9 @@ public class AssignmentController {
     public ResponseEntity<?> evaluateSubmit (@PathVariable("submitId") Long submitId, @Valid @RequestBody SubmitRequestDTO.Evaluate evaluateSubmit) {
         return submitService.evaluateSubmit(submitId, evaluateSubmit);
     }
+
+    @PostMapping("/{assignmentId}/submit/list")
+    public ResponseEntity<?> listSubmit (@PathVariable("assignmentId") Long assignmentId) {
+        return assignmentService.submitListOfAssignment(assignmentId);
+    }
 }
