@@ -32,10 +32,8 @@ public class S3Service {
     }
 
     /* 파일 삭제 */
-    public void delete (String fileUrl) {
+    public void delete (String keyName) {
         try {
-            String keyName = fileUrl.substring(fileUrl.lastIndexOf("/"));
-            keyName = keyName.substring(1);
             amazonS3.deleteObject(bucket, keyName);
         } catch (AmazonServiceException e) {
             log.error(e.toString());

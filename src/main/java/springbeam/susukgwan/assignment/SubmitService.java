@@ -18,6 +18,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -37,15 +38,14 @@ public class SubmitService {
         if (assignment.isPresent()) {
             List<String> imageUrlList = new ArrayList<>();
 
-            String now = LocalDateTime.now(ZoneId.of("Asia/Seoul")).format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
             String userId = SecurityContextHolder.getContext().getAuthentication().getName();
-
             int index = 1;
+
             for (MultipartFile multipartFile : multipartFileList) {
                 String originalFilename = multipartFile.getOriginalFilename();
-                String fileFormat = originalFilename.substring(originalFilename.lastIndexOf("."));
-                String fileName = now + "-" + assignmentId + "-" + userId + "-(" + index + ")" + fileFormat; // 파일명 지정 (format : 날짜-숙제ID-유저ID-(순서).확장자)
-                imageUrlList.add(s3Service.upload(multipartFile, fileName));
+                String fileName = userId + "/" + assignmentId + "-" + UUID.randomUUID() + "-(" + index + ")" + originalFilename.substring(originalFilename.lastIndexOf(".")); // 파일명 지정 (format : 유저아이디/숙제ID-랜덤값-(순서).확장자)
+                s3Service.upload(multipartFile, fileName);
+                imageUrlList.add(fileName);
                 index++;
             }
 
