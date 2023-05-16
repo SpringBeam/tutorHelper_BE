@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import springbeam.susukgwan.ResponseMsg;
 import springbeam.susukgwan.ResponseMsgList;
+import springbeam.susukgwan.S3Service;
 import springbeam.susukgwan.assignment.dto.AssignmentRequestDTO;
 import springbeam.susukgwan.assignment.dto.SubmitResponseDTO;
 import springbeam.susukgwan.note.Note;
@@ -26,6 +27,7 @@ public class AssignmentService {
     private final TutoringRepository tutoringRepository;
     private final NoteRepository noteRepository;
     private final SubmitRepository submitRepository;
+    private final S3Service s3Service;
 
     /* 숙제 추가 */
     public ResponseEntity<?> createAssignment(AssignmentRequestDTO.Create createAssignment) {
@@ -110,7 +112,7 @@ public class AssignmentService {
         }
 
         List<Submit> submitList = submitRepository.GetSubmitListByAssignmentId(assignmentId);
-        List<SubmitResponseDTO> responseList = submitList.stream().map(o->new SubmitResponseDTO(o)).collect(Collectors.toList());
+        List<SubmitResponseDTO> responseList = submitList.stream().map(o->new SubmitResponseDTO(o, s3Service)).collect(Collectors.toList());
 
         if (responseList.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_SUBMIT.getMsg()));
