@@ -8,6 +8,7 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -48,20 +49,26 @@ public class S3Service {
     public String getPresignedURL (String keyName) {
         String preSignedURL = "";
 
-        Date expiration = new Date();
-        Long expTimeMillis = expiration.getTime();
-        expTimeMillis += 1000 * 60 * 2; // 만료기한 2분
-        expiration.setTime(expTimeMillis);
+        String userId = SecurityContextHolder.getContext().getAuthentication().getName();
+        String fileUserId = keyName.substring(0, keyName.indexOf("/"));
 
-        try {
-            GeneratePresignedUrlRequest generatePresignedUrlRequest = new GeneratePresignedUrlRequest(bucket, keyName)
-                    .withMethod(HttpMethod.GET)
-                    .withExpiration(expiration);
-            URL url = amazonS3.generatePresignedUrl(generatePresignedUrlRequest);
-            preSignedURL = url.toString();
-        } catch (Exception e) {
-            log.error(e.toString());
+        if (userId.equals(fileUserId)) { // 현재 유저와 파일을 올린 유저가 같을 때만 => TODO : 선생님 & 학생 둘다 볼수있게
+            Date expiration = new Date();
+            Long expTimeMillis = expiration.getTime();
+            expTimeMillis += 1000 * 60 * 2; // 만료기한 2분
+            expiration.setTime(expTimeMillis);
+
+            try {
+                GeneratePresignedUrlRequest generatePresignedUrlRequest = new GeneratePresignedUrlRequest(bucket, keyName)
+                        .withMethod(HttpMethod.GET)
+                        .withExpiration(expiration);
+                URL url = amazonS3.generatePresignedUrl(generatePresignedUrlRequest);
+                preSignedURL = url.toString();
+            } catch (Exception e) {
+                log.error(e.toString());
+            }
         }
+
         return preSignedURL;
     }
 }
