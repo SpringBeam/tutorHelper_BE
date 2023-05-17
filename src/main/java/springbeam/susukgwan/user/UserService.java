@@ -49,7 +49,7 @@ public class UserService {
         if (userOptional.isPresent()) {
             User user = userOptional.get();
             return ResponseEntity.ok().body(
-                    UserDetailVO.builder().role(user.getRole().getRole())
+                    UserDetailVO.builder().role(user.getRole().getRole()).name(user.getName()).build()
             );
         }
         else return ResponseEntity.status(HttpStatus.CONFLICT).body(new ResponseMsg(ResponseMsgList.NO_SUCH_USER_IN_DB.getMsg()));
