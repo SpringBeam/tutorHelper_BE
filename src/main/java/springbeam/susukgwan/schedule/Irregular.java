@@ -33,4 +33,7 @@ public class Irregular {
 
     @Column(nullable = false)
     private Long tutoringId;
+
+    @Column(nullable = false)
+    private Long tutorId;
 }
