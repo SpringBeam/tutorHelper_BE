@@ -34,13 +34,12 @@ public class ReviewService {
         Optional<Tag> tag = tagRepository.findById(createReview.getTagId());
 
         if (tutoring.isPresent() && tag.isPresent()) {
-            List<Note> notes = noteRepository.findByTutoringOrderByDateTimeDesc(tutoring.get());
-            if (!notes.isEmpty()){
-                Note note = notes.get(0); // 최근일지
+            Optional<Note> note = noteRepository.findFirst1ByTutoringOrderByDateTimeDesc(tutoring.get());
+            if (note.isPresent()) {
                 Review review = Review.builder()
                         .body(createReview.getBody())
                         .isCompleted(false)
-                        .note(note)
+                        .note(note.get())
                         .tag(tag.get())
                         .build();
                 reviewRepository.save(review);
@@ -69,7 +68,7 @@ public class ReviewService {
 
         if (updateReview.getBody() != null) {
             if (updateReview.getBody().isBlank()) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseMsg(ResponseMsgList.REVIEW_BODY_CONSTRAINTS.getMsg()));
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseMsg(ResponseMsgList.BODY_CONSTRAINTS.getMsg()));
             }
             r.setBody(updateReview.getBody());
         }

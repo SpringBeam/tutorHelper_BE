@@ -5,8 +5,9 @@ import org.springframework.stereotype.Repository;
 import springbeam.susukgwan.tutoring.Tutoring;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface NoteRepository extends JpaRepository<Note, Long> {
-    List<Note> findByTutoringOrderByDateTimeDesc(Tutoring tutoring);
+    Optional<Note> findFirst1ByTutoringOrderByDateTimeDesc(Tutoring tutoring);
 }

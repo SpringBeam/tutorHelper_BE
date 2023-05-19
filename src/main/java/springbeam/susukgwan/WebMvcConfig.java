@@ -11,7 +11,6 @@ import springbeam.susukgwan.tag.TagAuthInterceptor;
 public class WebMvcConfig implements WebMvcConfigurer {
     @Autowired
     TagAuthInterceptor tagAuthInterceptor;
-
     @Autowired
     ReviewAuthInterceptor reviewAuthInterceptor;
 
