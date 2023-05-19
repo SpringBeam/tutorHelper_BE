@@ -48,7 +48,7 @@ public class AssignmentController {
         return submitService.evaluateSubmit(submitId, evaluateSubmit);
     }
 
-    @PostMapping("/{assignmentId}/submit/list")
+    @GetMapping("/{assignmentId}/submit/list")
     public ResponseEntity<?> listSubmit (@PathVariable("assignmentId") Long assignmentId) {
         return assignmentService.submitListOfAssignment(assignmentId);
     }
