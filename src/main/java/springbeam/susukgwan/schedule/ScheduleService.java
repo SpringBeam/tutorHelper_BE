@@ -154,7 +154,6 @@ public class ScheduleService {
         // to check if it is preoccupied or not.
         List<Tutoring> tutoringList = tutoringRepository.findAllByTutorId(tutorId);
         List<Time> timeList = parseDayTimeString(changeRegularDTO.getDayTime(), targetTutoring);
-        // TODO 아래와 비슷한 로직으로 newRegularSchedule 함수를 짜야할듯!
         for (Tutoring tutoring : tutoringList) {
             if (tutoring.getId() == targetTutoring.getId()) continue;
             // if the dayTime is preoccupied by a certain regular time, return that time.
@@ -209,9 +208,16 @@ public class ScheduleService {
                 cancellationRepository.delete(cancellation);
             }
         }
-        timeRepository.deleteAll(targetTutoring.getTimes());
+        timeRepository.deleteByTutoringId(targetTutoring.getId());
         timeRepository.saveAllAndFlush(timeList);
         return ResponseEntity.ok().build();
+        /* 에러 발생 부분, 서로 연관관계가 있는 entity의 경우 같은 transaction 안에서 삭제하게 되면 존재하지 않는 entity를 한 쪽이 갖게 됨.
+           그래서 내부적으로 동기화가 강제적으로 진행돼서, 변경되지 않는 것. ->
+        *  timeRepository.deleteAll(targetTutoring.getTimes());
+           1. 쿼리로 해결 2. relation 제거 3. transaction 분리.
+           2로 안돼서 1로 해결하였음.
+        * */
+
         /* 다른 수업의 정규일정과 겹치면 에러응답 및 어떤 일정이 겹쳤는지 메시지 전송
            모든 비정규일정과 겹치면 에러응답 및 어떤 일정이 겹쳤는지 메시지 전송
            다만, 지나간 비정규일정을 고려하면 안된다.

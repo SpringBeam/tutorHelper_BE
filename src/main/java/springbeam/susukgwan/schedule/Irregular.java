@@ -12,7 +12,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 
 @Entity
-@Table(name = "cancellation")
+@Table(name = "irregular")
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
