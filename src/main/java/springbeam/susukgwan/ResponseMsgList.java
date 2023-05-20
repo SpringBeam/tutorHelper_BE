@@ -21,7 +21,8 @@ public enum ResponseMsgList {
     NO_SUCH_USER_IN_DB("해당 유저의 정보가 DB에 존재하지 않습니다."),
     NO_SUCH_INVITATION_CODE("해당하는 초대 코드가 존재하지 않습니다."),
     NO_SUCH_TUTORING("해당 수업이 존재하지 않습니다."),
-    NOT_AUTHORIZED("권한이 없습니다.")
+    NOT_AUTHORIZED("권한이 없습니다."),
+    NO_SUCH_SCHEDULE("해당 일정이 존재하지 않습니다.")
     ;
 
     private final String msg;
