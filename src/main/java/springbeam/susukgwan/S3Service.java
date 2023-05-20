@@ -11,11 +11,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import springbeam.susukgwan.assignment.AssignmentRepository;
 
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -25,6 +28,7 @@ public class S3Service {
     private String bucket;
 
     private final AmazonS3 amazonS3;
+    private final AssignmentRepository assignmentRepository;
 
     /* 파일 업로드 */
     public String upload(MultipartFile multipartFile, String s3FileName) throws IOException {
@@ -49,10 +53,15 @@ public class S3Service {
     public String getPresignedURL (String keyName) {
         String preSignedURL = "";
 
-        String userId = SecurityContextHolder.getContext().getAuthentication().getName();
-        String fileUserId = keyName.substring(0, keyName.indexOf("/"));
+        Long userId = Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
+        Long fileAssignmentId = Long.parseLong(keyName.substring(keyName.indexOf("/")+1, keyName.indexOf("-")));
 
-        if (userId.equals(fileUserId)) { // 현재 유저와 파일을 올린 유저가 같을 때만 => TODO : 선생님 & 학생 둘다 볼수있게
+        List<Long> allUserIdOfAssignment = new ArrayList<>();
+        allUserIdOfAssignment.add(assignmentRepository.GetTutorIdOfAssignment(fileAssignmentId));
+        allUserIdOfAssignment.add(assignmentRepository.GetTuteeIdOfAssignment(fileAssignmentId));
+        allUserIdOfAssignment.add(assignmentRepository.GetParentIdOfAssignment(fileAssignmentId));
+
+        if (allUserIdOfAssignment.contains(userId)) { // 해당 수업의 선생님, 학생, 학부모 모두 접근가능
             Date expiration = new Date();
             Long expTimeMillis = expiration.getTime();
             expTimeMillis += 1000 * 60 * 2; // 만료기한 2분
