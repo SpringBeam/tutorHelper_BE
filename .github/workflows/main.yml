@@ -37,6 +37,10 @@ jobs:
             spring.security.oauth2.client.registration.kakao.client-secret
             spring.security.oauth2.client.registration.kakao.redirect-uri
             jwt.secret.key
+            cloud.aws.credentials.accessKey
+            cloud.aws.credentials.secretKey
+            cloud.aws.s3.bucket
+            
           value: |
             ${{ secrets.RDS_URL }}
             ${{ secrets.RDS_USERNAME }}
@@ -45,6 +49,10 @@ jobs:
             ${{ secrets.KAKAO_SECRET }}
             ${{ secrets.KAKAO_REDIRECT_URI }}
             ${{ secrets.JWT_SECRET }}
+            ${{ S3_ACCESSKEY }}
+            ${{ S3_SECRETKEY }}
+            ${{ S3_BUCKET  }}
+            
       
       - name: Build with Gradle
         run: ./gradlew build
