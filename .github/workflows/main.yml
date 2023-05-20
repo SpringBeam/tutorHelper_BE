@@ -49,9 +49,9 @@ jobs:
             ${{ secrets.KAKAO_SECRET }}
             ${{ secrets.KAKAO_REDIRECT_URI }}
             ${{ secrets.JWT_SECRET }}
-            ${{ S3_ACCESSKEY }}
-            ${{ S3_SECRETKEY }}
-            ${{ S3_BUCKET  }}
+            ${{ secrets.S3_ACCESSKEY }}
+            ${{ secrets.S3_SECRETKEY }}
+            ${{ secrets.S3_BUCKET  }}
             
       
       - name: Build with Gradle
