@@ -275,19 +275,19 @@ public class ScheduleService {
            정규시간을 등록한다.
           */
     }
-    public ResponseEntity<?> getScheduleListYearMonth(GetScheduleDTO getScheduleDTO) {
+    public ResponseEntity<?> getScheduleListYearMonth(Long tutoringId, int year, int month) {
         // Check whether the request user actually has this tutoring.
         String tutorIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
         Long tutorId = Long.parseLong(tutorIdStr);
-        Optional<Tutoring> tutoringOptional = tutoringRepository.findByIdAndTutorId(getScheduleDTO.getTutoringId(), tutorId);
+        Optional<Tutoring> tutoringOptional = tutoringRepository.findByIdAndTutorId(tutoringId, tutorId);
         if (tutoringOptional.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NO_SUCH_TUTORING.getMsg()));
         }
         Tutoring tutoring = tutoringOptional.get();
 
-        // parse and get LocalDateTime object
-        String[] yearMonth = getScheduleDTO.getYearMonth().split(" ");
-        LocalDate targetDate = LocalDate.of(Integer.parseInt(yearMonth[0]), Integer.parseInt(yearMonth[1]),1);
+        // get LocalDateTime object
+        // String[] yearMonth = getScheduleDTO.getYearMonth().split(" ");
+        LocalDate targetDate = LocalDate.of(year, month, 1);
 
         // times of the tutoring, scheduleList for the response, cancellations of the month, irregular list of the month
         List<Time> timeList = tutoring.getTimes();
