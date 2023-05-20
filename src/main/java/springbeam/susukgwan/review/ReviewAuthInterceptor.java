@@ -27,15 +27,14 @@ public class ReviewAuthInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         /* Review Update & Delete & Check Authorization */
-        String tutorIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
-        Long tutorId = Long.parseLong(tutorIdStr);
+        Long userId = Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
 
         Map<?, ?> pathVariables = (Map<?, ?>) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
         Long reviewId = Long.parseLong((String)pathVariables.get("reviewId"));
 
         Long tutorIdOfReview = reviewRepository.GetTutorIdOfReview(reviewId);
 
-        if (tutorIdOfReview != null && tutorId != tutorIdOfReview) {
+        if (tutorIdOfReview != null && userId != tutorIdOfReview) {
             String result = objectMapper.writeValueAsString(new ResponseMsg(ResponseMsgList.NOT_AUTHORIZED.getMsg()));
             response.setContentType("application/json");
             response.setCharacterEncoding("utf-8");
