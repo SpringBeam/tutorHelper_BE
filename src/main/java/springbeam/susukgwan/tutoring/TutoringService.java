@@ -8,8 +8,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import springbeam.susukgwan.ResponseMsg;
 import springbeam.susukgwan.ResponseMsgList;
+import springbeam.susukgwan.schedule.ScheduleService;
 import springbeam.susukgwan.schedule.Time;
 import springbeam.susukgwan.schedule.TimeRepository;
+import springbeam.susukgwan.schedule.dto.ChangeRegularDTO;
 import springbeam.susukgwan.subject.Subject;
 import springbeam.susukgwan.subject.SubjectRepository;
 import springbeam.susukgwan.tutoring.dto.*;
@@ -38,6 +40,8 @@ public class TutoringService {
     private InvitationCodeRepository invitationCodeRepository;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private ScheduleService scheduleService;
 
     public ResponseEntity<?> registerTutoring (RegisterTutoringDTO registerTutoringDTO) {
         /* TODO 선생, 학생 및 과목 중복 확인 -> 중복 요청 시 BAD REQUEST 반환 (나중에) */
@@ -50,8 +54,10 @@ public class TutoringService {
         Tutoring newTutoring = Tutoring.builder().tutorId(tutorId).startDate(startDate)
                         .subject(subject) // 과목 매핑
                         .build();
-        newTutoring = tutoringRepository.save(newTutoring);
+        tutoringRepository.save(newTutoring);
+        return scheduleService.registerRegularSchedule(newTutoring, registerTutoringDTO.getDayTime());
 
+        /*
         String dayTimeString = registerTutoringDTO.getDayTime();
         String[] split = dayTimeString.split(",");
         Iterator<String> it = Arrays.stream(split).iterator();
@@ -69,6 +75,7 @@ public class TutoringService {
             timeRepository.save(regularTime);
         }
         return ResponseEntity.ok().build();
+         */
     }
 
     public ResponseEntity<?> updateTutoring(Long tutoringId, UpdateTutoringDTO updateTutoringDTO) {
