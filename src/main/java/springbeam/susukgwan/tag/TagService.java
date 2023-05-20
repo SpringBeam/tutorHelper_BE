@@ -3,6 +3,7 @@ package springbeam.susukgwan.tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import springbeam.susukgwan.ResponseMsg;
 import springbeam.susukgwan.ResponseMsgList;
@@ -25,9 +26,14 @@ public class TagService {
     /* 태그 추가 */
     public ResponseEntity<?> createTag(TagRequestDTO.Create createTag){
         Optional<Tutoring> tutoring = tutoringRepository.findById(createTag.getTutoringId());
+        Long userId = Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
 
         if (tutoring.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_TUTORING.getMsg()));
+        } else {
+            if (tutoring.get().getTutorId() != userId) { // 해당 수업의 선생님만 접근 가능
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ResponseMsg(ResponseMsgList.NOT_AUTHORIZED.getMsg()));
+            }
         }
 
         Subject subject = tutoring.get().getSubject();
@@ -51,8 +57,14 @@ public class TagService {
         Optional<Tutoring> tutoring = tutoringRepository.findById(listTag.getTutoringId());
         TagResponseDTO.CountAndTagList tagList = new TagResponseDTO.CountAndTagList();
 
+        Long userId = Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
+
         if (tutoring.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_TUTORING.getMsg()));
+        } else {
+            if (tutoring.get().getTutorId() != userId) { // 해당 수업의 선생님만 접근 가능
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ResponseMsg(ResponseMsgList.NOT_AUTHORIZED.getMsg()));
+            }
         }
 
         Subject subject = tutoring.get().getSubject();

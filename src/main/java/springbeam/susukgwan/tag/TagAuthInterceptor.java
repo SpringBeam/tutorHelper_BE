@@ -25,15 +25,14 @@ public class TagAuthInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         /* Tag Update & Delete Authorization */
-        String tutorIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
-        Long tutorId = Long.parseLong(tutorIdStr);
+        Long userId = Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
 
         Map<?, ?> pathVariables = (Map<?, ?>) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
         Long tagId = Long.parseLong((String)pathVariables.get("tagId"));
 
         Long tutorIdOfTag = tagRepository.GetTutorIdOfTag(tagId);
 
-        if (tutorIdOfTag != null && tutorId != tutorIdOfTag) {
+        if (tutorIdOfTag != null && userId != tutorIdOfTag) {
             String result = objectMapper.writeValueAsString(new ResponseMsg(ResponseMsgList.NOT_AUTHORIZED.getMsg()));
             response.setContentType("application/json");
             response.setCharacterEncoding("utf-8");

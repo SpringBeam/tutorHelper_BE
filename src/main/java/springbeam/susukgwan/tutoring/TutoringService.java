@@ -241,7 +241,8 @@ public class TutoringService {
                         .tuteeName("")
                         .dayTime(makeDayTimeString(t.getTimes()))
                         .build();
-                if (userRepository.findById(t.getTuteeId()).isPresent()) {
+                // 튜터링에 학생이 연결되지 않은 경우에는 null이므로 주의해서 다뤄야 한다.
+                if (t.getTuteeId()!=null && userRepository.findById(t.getTuteeId()).isPresent()) {
                     DTOTutor.setTuteeName(userRepository.findById(t.getTuteeId()).get().getName());
                 }
                 // 학생이 없으면 빈 문자열
@@ -277,7 +278,8 @@ public class TutoringService {
                 if (userRepository.findById(t.getTutorId()).isPresent()) {
                     DTOParent.setTutorName(userRepository.findById(t.getTutorId()).get().getName());
                 }
-                if (userRepository.findById(t.getTuteeId()).isPresent()) {
+                // 튜터링에 학생이 연결되지 않은 경우에는 null이므로 주의해서 다뤄야 한다.
+                if (t.getTuteeId()!=null && userRepository.findById(t.getTuteeId()).isPresent()) {
                     DTOParent.setTuteeName(userRepository.findById(t.getTuteeId()).get().getName());
                 }
                 return DTOParent;

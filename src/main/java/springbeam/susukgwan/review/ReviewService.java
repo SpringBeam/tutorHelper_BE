@@ -3,6 +3,7 @@ package springbeam.susukgwan.review;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import springbeam.susukgwan.ResponseMsg;
 import springbeam.susukgwan.ResponseMsgList;
@@ -15,6 +16,7 @@ import springbeam.susukgwan.tag.TagRepository;
 import springbeam.susukgwan.tutoring.Tutoring;
 import springbeam.susukgwan.tutoring.TutoringRepository;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -33,14 +35,22 @@ public class ReviewService {
         Optional<Tutoring> tutoring = tutoringRepository.findById(createReview.getTutoringId());
         Optional<Tag> tag = tagRepository.findById(createReview.getTagId());
 
+        Long userId = Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
+        if (tutoring.isPresent() && tutoring.get().getTutorId() != userId) { // 해당 수업의 선생님만 접근가능
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ResponseMsg(ResponseMsgList.NOT_AUTHORIZED.getMsg()));
+        }
+        Long tutorIdOfTag = tagRepository.GetTutorIdOfTag(createReview.getTagId());
+        if (tutorIdOfTag != null && (userId != tutorIdOfTag)) { // 해당 태그를 만든 선생님만 접근가능
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ResponseMsg(ResponseMsgList.NOT_AUTHORIZED.getMsg()));
+        }
+
         if (tutoring.isPresent() && tag.isPresent()) {
-            List<Note> notes = noteRepository.findByTutoringOrderByDateTimeDesc(tutoring.get());
-            if (!notes.isEmpty()){
-                Note note = notes.get(0); // 최근일지
+            Optional<Note> note = noteRepository.findFirst1ByTutoringOrderByDateTimeDesc(tutoring.get());
+            if (note.isPresent()) {
                 Review review = Review.builder()
                         .body(createReview.getBody())
                         .isCompleted(false)
-                        .note(note)
+                        .note(note.get())
                         .tag(tag.get())
                         .build();
                 reviewRepository.save(review);
@@ -69,7 +79,7 @@ public class ReviewService {
 
         if (updateReview.getBody() != null) {
             if (updateReview.getBody().isBlank()) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseMsg(ResponseMsgList.REVIEW_BODY_CONSTRAINTS.getMsg()));
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseMsg(ResponseMsgList.BODY_CONSTRAINTS.getMsg()));
             }
             r.setBody(updateReview.getBody());
         }
@@ -79,6 +89,13 @@ public class ReviewService {
             if (tag.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_TAG.getMsg()));
             }
+
+            Long userId = Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
+            Long tutorIdOfTag = tagRepository.GetTutorIdOfTag(updateReview.getTagId());
+            if (tutorIdOfTag != null && (userId != tutorIdOfTag)) { // 해당 태그를 만든 선생님만 접근가능
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ResponseMsg(ResponseMsgList.NOT_AUTHORIZED.getMsg()));
+            }
+
             r.setTag(tag.get());
         }
 
@@ -113,9 +130,18 @@ public class ReviewService {
     /* 복습내역 불러오기 */
     public ResponseEntity<?> reviewList(ReviewRequestDTO.ListRequest listReview) {
         Optional<Tutoring> tutoring = tutoringRepository.findById(listReview.getTutoringId());
+        Long userId = Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
 
         if (tutoring.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_TUTORING.getMsg()));
+        } else {
+            List<Long> users = new ArrayList<>();
+            users.add(tutoring.get().getTutorId());
+            users.add(tutoring.get().getTuteeId());
+            users.add(tutoring.get().getParentId());
+            if (!users.contains(userId)) { // 해당 수업의 선생님, 학생, 학부모만 접근 가능
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ResponseMsg(ResponseMsgList.NOT_AUTHORIZED.getMsg()));
+            }
         }
 
         List<Review> reviewList = reviewRepository.GetReviewListbyTutoringId(listReview.getTutoringId());
