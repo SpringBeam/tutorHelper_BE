@@ -33,6 +33,11 @@ public class AssignmentController {
         return assignmentService.deleteAssignment(assignmentId);
     }
 
+    @PostMapping("/{assignmentId}/check")
+    public ResponseEntity<?> checkAssignment (@PathVariable("assignmentId") Long assignmentId, @Valid @RequestBody AssignmentRequestDTO.Check checkAssignment) {
+        return assignmentService.checkAssignment(assignmentId, checkAssignment);
+    }
+
     @PostMapping("/{assignmentId}/submit")
     public ResponseEntity<?> submitFiles (@PathVariable("assignmentId") Long assignmentId, @RequestParam("images") List<MultipartFile> multipartFileList) throws IOException {
         return submitService.submitFiles(assignmentId, multipartFileList);
