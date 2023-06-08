@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
+import springbeam.susukgwan.assignment.converter.LongListConverter;
 import springbeam.susukgwan.note.Note;
 
 import java.time.LocalDate;

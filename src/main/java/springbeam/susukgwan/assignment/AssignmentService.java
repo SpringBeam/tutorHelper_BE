@@ -16,7 +16,6 @@ import springbeam.susukgwan.note.NoteRepository;
 import springbeam.susukgwan.tutoring.Tutoring;
 import springbeam.susukgwan.tutoring.TutoringRepository;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -67,21 +66,7 @@ public class AssignmentService {
 
     /* 숙제 수정 */
     public ResponseEntity<?> updateAssignment(Long assignmentId, AssignmentRequestDTO.Update updateAssignment) {
-
-        /* Authorization - 이 숙제를 등록한 선생님만 접근 가능 */
-        Long userId = Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
-        Long tutorIdOfAssignment = assignmentRepository.GetTutorIdOfAssignment(assignmentId);
-        if (tutorIdOfAssignment != null && userId != tutorIdOfAssignment) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ResponseMsg(ResponseMsgList.NOT_AUTHORIZED.getMsg()));
-        }
-        /* End */
-
         Optional<Assignment> assignment = assignmentRepository.findById(assignmentId);
-
-        if (assignment.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_ASSIGNMENT.getMsg()));
-        }
-
         Assignment a = assignment.get();
 
         if (updateAssignment.getBody() != null) {
@@ -113,53 +98,27 @@ public class AssignmentService {
 
     /* 숙제 삭제 */
     public ResponseEntity<?> deleteAssignment(Long assignmentId) {
+        assignmentRepository.deleteById(assignmentId);
+        return ResponseEntity.ok().build();
+    }
 
-        /* Authorization - 이 숙제를 등록한 선생님만 접근 가능 */
-        Long userId = Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
-        Long tutorIdOfAssignment = assignmentRepository.GetTutorIdOfAssignment(assignmentId);
-        if (tutorIdOfAssignment != null && userId != tutorIdOfAssignment) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ResponseMsg(ResponseMsgList.NOT_AUTHORIZED.getMsg()));
-        }
-        /* End */
-
+    /* 숙제 완료/미완료 체크 */
+    public ResponseEntity<?> checkAssignment (Long assignmentId, AssignmentRequestDTO.Check checkAssignment) {
         Optional<Assignment> assignment = assignmentRepository.findById(assignmentId);
-        if (assignment.isPresent()) {
-            assignmentRepository.deleteById(assignmentId);
-            return ResponseEntity.ok().build();
-        } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_ASSIGNMENT.getMsg()));
-        }
+        Assignment a = assignment.get();
+        a.setIsCompleted(checkAssignment.getIsCompleted());
+        assignmentRepository.save(a);
+        return ResponseEntity.ok().build();
     }
 
     /* 숙제의 모든 인증피드 리스트 */
     public ResponseEntity<?> submitListOfAssignment (Long assignmentId) {
-
-        /* Authorization - 이 숙제에 할당된 선생님, 학생, 학부모만 접근 가능 */
-        Long userId = Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
-
-        List<Long> allUserIdOfAssignment = new ArrayList<>();
-        allUserIdOfAssignment.add(assignmentRepository.GetTutorIdOfAssignment(assignmentId));
-        allUserIdOfAssignment.add(assignmentRepository.GetTuteeIdOfAssignment(assignmentId));
-        allUserIdOfAssignment.add(assignmentRepository.GetParentIdOfAssignment(assignmentId));
-
-        if (!allUserIdOfAssignment.isEmpty() && !allUserIdOfAssignment.contains(userId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ResponseMsg(ResponseMsgList.NOT_AUTHORIZED.getMsg()));
-        }
-        /* End */
-
-        Optional<Assignment> assignment = assignmentRepository.findById(assignmentId);
-
-        if (assignment.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_ASSIGNMENT.getMsg()));
-        }
-
         List<Submit> submitList = submitRepository.GetSubmitListByAssignmentId(assignmentId);
         List<SubmitResponseDTO> responseList = submitList.stream().map(o->new SubmitResponseDTO(o, s3Service)).collect(Collectors.toList());
 
         if (responseList.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_SUBMIT.getMsg()));
         }
-
         return ResponseEntity.ok().body(responseList);
     }
 }

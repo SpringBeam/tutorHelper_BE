@@ -36,4 +36,11 @@ public class AssignmentRequestDTO {
         private List<Long> frequency;
         private String amount;
     }
+
+    @Getter
+    @Setter
+    public static class Check {
+        @NotNull
+        private Boolean isCompleted;
+    }
 }
