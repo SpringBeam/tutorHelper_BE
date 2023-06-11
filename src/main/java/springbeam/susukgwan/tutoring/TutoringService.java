@@ -8,10 +8,15 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import springbeam.susukgwan.ResponseMsg;
 import springbeam.susukgwan.ResponseMsgList;
+import springbeam.susukgwan.review.ReviewService;
+import springbeam.susukgwan.review.dto.ReviewRequestDTO;
+import springbeam.susukgwan.review.dto.ReviewResponseDTO;
 import springbeam.susukgwan.schedule.ScheduleService;
 import springbeam.susukgwan.schedule.Time;
 import springbeam.susukgwan.schedule.TimeRepository;
 import springbeam.susukgwan.schedule.dto.ChangeRegularDTO;
+import springbeam.susukgwan.schedule.dto.GetScheduleDTO;
+import springbeam.susukgwan.schedule.dto.ScheduleInfoResponseDTO;
 import springbeam.susukgwan.subject.Subject;
 import springbeam.susukgwan.subject.SubjectRepository;
 import springbeam.susukgwan.tutoring.dto.*;
@@ -42,6 +47,8 @@ public class TutoringService {
     private UserRepository userRepository;
     @Autowired
     private ScheduleService scheduleService;
+    @Autowired
+    private ReviewService reviewService;
 
     public ResponseEntity<?> registerTutoring (RegisterTutoringDTO registerTutoringDTO) {
         /* TODO 선생, 학생 및 과목 중복 확인 -> 중복 요청 시 BAD REQUEST 반환 (나중에) */
@@ -56,26 +63,6 @@ public class TutoringService {
                         .build();
         tutoringRepository.save(newTutoring);
         return scheduleService.registerRegularSchedule(newTutoring, registerTutoringDTO.getDayTime());
-
-        /*
-        String dayTimeString = registerTutoringDTO.getDayTime();
-        String[] split = dayTimeString.split(",");
-        Iterator<String> it = Arrays.stream(split).iterator();
-        while (it.hasNext()) {
-            String[] each = it.next().strip().split(" ");
-            DayOfWeek dayOfWeek = DayOfWeek.of(Integer.parseInt(each[0]));
-            LocalTime startTime = LocalTime.parse(each[1]);
-            LocalTime endTime = LocalTime.parse(each[2]);
-            Time regularTime = Time.builder()
-                    .day(dayOfWeek)
-                    .startTime(startTime)
-                    .endTime(endTime)
-                    .tutoring(newTutoring)
-                            .build();
-            timeRepository.save(regularTime);
-        }
-        return ResponseEntity.ok().build();
-         */
     }
 
     public ResponseEntity<?> updateTutoring(Long tutoringId, UpdateTutoringDTO updateTutoringDTO) {
@@ -290,6 +277,52 @@ public class TutoringService {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
     }
+    /* get all info for tutoring overview (basic info for tutoring, schedule of month, noteList, assignmentList, reviewList) */
+    public ResponseEntity<?> getTutoringDetail(Long tutoringId, int year, int month) {
+        // Check whether the request user actually has this tutoring.
+        String tutorIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
+        Long tutorId = Long.parseLong(tutorIdStr);
+        Optional<Tutoring> tutoringOptional = tutoringRepository.findByIdAndTutorId(tutoringId, tutorId);
+        if (tutoringOptional.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NO_SUCH_TUTORING.getMsg()));
+        }
+        Tutoring tutoring = tutoringOptional.get();
+        // get basic info of tutoring
+        TutoringDetailDTO tutoringDetailDTO = TutoringDetailDTO.builder()
+                .tutoringId(tutoring.getId())
+                        .subject(tutoring.getSubject().getName())
+                .tuteeName("")
+                .parentName("")
+                .startDate(tutoring.getStartDate().toString())
+                .dayTime(makeDayTimeString(tutoring.getTimes()))
+        .build();
+        if (tutoring.getTuteeId()!=null && userRepository.findById(tutoring.getTuteeId()).isPresent()) {
+            tutoringDetailDTO.setTuteeName(userRepository.findById(tutoring.getTuteeId()).get().getName());
+        }
+        if (tutoring.getParentId()!=null && userRepository.findById(tutoring.getParentId()).isPresent()) {
+            tutoringDetailDTO.setParentName(userRepository.findById(tutoring.getParentId()).get().getName());
+        }
+        // get schedule list and include it to DTO
+        // TODO 아래 타입체크? 혹은 추가 함수?
+        ResponseEntity<?> scheduleListYearMonth = scheduleService.getScheduleListYearMonth(tutoringId, year, month);
+        List<ScheduleInfoResponseDTO> scheduleList = (List<ScheduleInfoResponseDTO>) scheduleListYearMonth.getBody();
+        tutoringDetailDTO.setScheduleList(scheduleList);
+
+        // get review list and include it to DTO
+        List<ReviewResponseDTO> reviewResponseDTOS = reviewService.reviewListForDetail(tutoring);
+        if (reviewResponseDTOS.size() >2) {
+            reviewResponseDTOS = reviewResponseDTOS.subList(0,2);
+        }
+        tutoringDetailDTO.setReviewList(reviewResponseDTOS);
+
+        // get assignment list
+
+
+        // get note list
+
+        return ResponseEntity.ok(tutoringDetailDTO);
+    }
+
     private String makeDayTimeString(List<Time> timeList) {
         StringBuilder dayTimeScheduleBuilder = new StringBuilder();
         for (Time time: timeList) {

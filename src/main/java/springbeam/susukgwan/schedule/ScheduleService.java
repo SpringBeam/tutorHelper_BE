@@ -307,16 +307,21 @@ public class ScheduleService {
                                 i.getDate().getMonth() == targetDate.getMonth())
         ).toList();
 
-        // get regular schedules of the month
-        for (int i=0; i<targetDate.lengthOfMonth(); i++) {
-            DayOfWeek day = targetDate.getDayOfWeek().plus(i);
-            for (Time time: timeList) {
-                if (time.getDay().equals(day)) {
+        // get regular schedules of the month (At first, compare targetDate with startDate)
+        if (targetDate.isAfter(tutoring.getStartDate().minusMonths(1))) {
+            for (int i=0; i<targetDate.lengthOfMonth(); i++) {
+                if (targetDate.plusDays(i).isBefore(tutoring.getStartDate())) {
+                    continue;
+                }
+                DayOfWeek day = targetDate.getDayOfWeek().plus(i);
+                for (Time time: timeList) {
+                    if (time.getDay().equals(day)) {
                         scheduleList.add(ScheduleInfoResponseDTO.builder()
                                 .date(Integer.toString(i+1))
                                 .startTime(time.getStartTime().toString())
                                 .endTime(time.getEndTime().toString())
                                 .build());
+                    }
                 }
             }
         }
