@@ -7,7 +7,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import springbeam.susukgwan.ResponseMsg;
 import springbeam.susukgwan.ResponseMsgList;
-import springbeam.susukgwan.user.dto.SignUpDTO;
+import springbeam.susukgwan.user.dto.SignUpSocialUserDTO;
 import springbeam.susukgwan.user.dto.UpdateDTO;
 import springbeam.susukgwan.user.vo.UserDetailVO;
 
@@ -18,7 +18,7 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
-    public ResponseEntity<?> signUpUser(SignUpDTO signUpDTO) {
+    public ResponseEntity<?> signUpSocialUser(SignUpSocialUserDTO signUpSocialUserDTO) {
         String userIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
         Long userId = Long.parseLong(userIdStr);
         Optional<User> userOptional = userRepository.findById(userId);
@@ -26,16 +26,16 @@ public class UserService {
             User user = userOptional.get();
             if (user.getRole() == Role.NONE) {
                 // update role and name
-                if (signUpDTO.getRole().equals("tutor")) {
+                if (signUpSocialUserDTO.getRole().equals("tutor")) {
                     user.setRole(Role.TUTOR);
-                } else if (signUpDTO.getRole().equals("tutee")) {
+                } else if (signUpSocialUserDTO.getRole().equals("tutee")) {
                     user.setRole(Role.TUTEE);
-                } else if (signUpDTO.getRole().equals("parent")) {
+                } else if (signUpSocialUserDTO.getRole().equals("parent")) {
                     user.setRole(Role.PARENT);
                 } else {
                     return ResponseEntity.badRequest().build();
                 }
-                user.setName(signUpDTO.getName());
+                user.setName(signUpSocialUserDTO.getName());
                 userRepository.save(user);
                 return ResponseEntity.ok().build();
             }

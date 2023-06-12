@@ -1,4 +1,4 @@
-package springbeam.susukgwan.user.dto;
+package springbeam.susukgwan.auth.dto;
 
 import lombok.*;
 
@@ -8,6 +8,8 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 public class SignUpDTO {
-    private String role;
+    private String userId;
+    private String password;
     private String name;
+    private String role;
 }

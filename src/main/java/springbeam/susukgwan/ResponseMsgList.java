@@ -25,7 +25,9 @@ public enum ResponseMsgList {
     NO_SUCH_SCHEDULE("해당 일정이 존재하지 않습니다."),
     NOT_EXIST_ASSIGNMENT("숙제가 존재하지 않습니다."),
     NOT_EXIST_SUBMIT("숙제 인증피드가 존재하지 않습니다."),
-    SUBMIT_CONSTRAINTS("파일은 3개 이내로 제출해주세요.")
+    SUBMIT_CONSTRAINTS("파일은 3개 이내로 제출해주세요."),
+    USER_ALREADY_EXISTS("중복된 아이디입니다."),
+    NO_SUCH_USERID_AND_PASSWORD("아이디가 존재하지 않거나 비밀번호가 잘못 입력되었습니다.")
     ;
 
     private final String msg;
