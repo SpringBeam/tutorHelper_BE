@@ -89,7 +89,8 @@ public class NoteService {
         List<String> DayOfWeekAndStartTimeList = timeList.stream().map(o->o.getDay() + " " + o.getStartTime()).collect(Collectors.toList());
         String tutoringTimeStr = tutoringTime.getDayOfWeek() + " " + tutoringTime.toLocalTime();
 
-        Note note;
+        Note note = new Note();
+        Boolean isIrregular = false;
 
         if (DayOfWeekAndStartTimeList.contains(tutoringTimeStr)) { // 등록된 정규일정과 일치
             // 취소여부 확인
@@ -119,9 +120,12 @@ public class NoteService {
                             .tutoring(tutoring) // 수업
                             .build();
 //                    noteRepository.save(note);
+                    isIrregular = true;
                 }
             }
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(new ResponseMsg(ResponseMsgList.IMPOSSIBLE_TIME.getMsg()));
+            if (!isIrregular) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(new ResponseMsg(ResponseMsgList.IMPOSSIBLE_TIME.getMsg()));
+            }
         }
 
         // 복습 생성
