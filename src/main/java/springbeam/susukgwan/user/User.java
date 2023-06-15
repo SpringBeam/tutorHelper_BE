@@ -37,6 +37,10 @@ public class User {
     @Column(nullable = false)
     private String name;
 
+    // 프론트엔드 요청 임시 코드 socialId -> null 허용, userId -> null 허용. but,
+    private String userId;
+    // 암호화되어 저장됨.
+    private String password;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

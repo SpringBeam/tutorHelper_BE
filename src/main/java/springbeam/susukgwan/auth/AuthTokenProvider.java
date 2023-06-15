@@ -25,7 +25,7 @@ public class AuthTokenProvider {
     private final Key key;
     private static final String AUTHORITIES_KEY = "role";
     @Getter
-    private final Long accessTokenExpiry = 1000 * 60L * 60L * 6L; // 6시간
+    private final Long accessTokenExpiry = 1000 * 60L * 60L * 48L; // 6시간 -> 48시간
     @Getter
     private final Long refreshTokenExpiry = 1000 * 60L * 60L * 24L * 14L; // 14일
 
