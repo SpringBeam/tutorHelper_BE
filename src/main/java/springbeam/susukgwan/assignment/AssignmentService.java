@@ -54,8 +54,8 @@ public class AssignmentService {
                         .isCompleted(false)
                         .note(note.get())
                         .build();
-                assignmentRepository.save(assignment);
-                return ResponseEntity.ok().build();
+//                assignmentRepository.save(assignment);
+                return ResponseEntity.ok(assignment);
             } else {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_NOTE.getMsg()));
             }

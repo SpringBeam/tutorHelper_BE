@@ -3,6 +3,7 @@ package springbeam.susukgwan.tutoring;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+import springbeam.susukgwan.note.Note;
 import springbeam.susukgwan.schedule.Cancellation;
 import springbeam.susukgwan.schedule.Irregular;
 import springbeam.susukgwan.schedule.Time;
@@ -40,6 +41,9 @@ public class Tutoring {
 
     @OneToMany(mappedBy = "tutoring", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private final List<Irregular> irregulars = new ArrayList<>(); // 튜터링 삭제 시 관련 비정규일정이 삭제됨.
+
+    @OneToMany(mappedBy = "tutoring", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private final List<Note> notes = new ArrayList<>(); // 수업일지들
 
     @Column(nullable = false)
     private Long tutorId; // 선생 ID
