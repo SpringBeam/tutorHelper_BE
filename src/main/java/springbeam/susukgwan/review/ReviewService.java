@@ -53,8 +53,8 @@ public class ReviewService {
                         .note(note.get())
                         .tag(tag.get())
                         .build();
-                reviewRepository.save(review);
-                return ResponseEntity.ok().build();
+//                reviewRepository.save(review);
+                return ResponseEntity.ok(review);
             } else {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_NOTE.getMsg()));
             }

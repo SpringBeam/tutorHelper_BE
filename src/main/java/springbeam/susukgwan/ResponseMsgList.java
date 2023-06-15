@@ -25,7 +25,10 @@ public enum ResponseMsgList {
     NO_SUCH_SCHEDULE("해당 일정이 존재하지 않습니다."),
     NOT_EXIST_ASSIGNMENT("숙제가 존재하지 않습니다."),
     NOT_EXIST_SUBMIT("숙제 인증피드가 존재하지 않습니다."),
-    SUBMIT_CONSTRAINTS("파일은 3개 이내로 제출해주세요.")
+    SUBMIT_CONSTRAINTS("파일은 3개 이내로 제출해주세요."),
+    EXIST_NOTE("해당 수업일시에 이미 수업일지가 등록되어있습니다."),
+    ALREADY_CANCELLED("이미 취소된 수업입니다."),
+    IMPOSSIBLE_TIME("수업일시로 등록된 시간이 아닙니다.")
     ;
 
     private final String msg;

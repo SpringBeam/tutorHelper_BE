@@ -2,6 +2,7 @@ package springbeam.susukgwan.assignment;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -17,10 +18,17 @@ import java.util.List;
 public class AssignmentController {
     private final AssignmentService assignmentService;
     private final SubmitService submitService;
+    private final AssignmentRepository assignmentRepository;
 
     @PostMapping("")
     public ResponseEntity<?> createAssignment (@Valid @RequestBody AssignmentRequestDTO.Create createAssignment) {
-        return assignmentService.createAssignment(createAssignment);
+        ResponseEntity result = assignmentService.createAssignment(createAssignment);
+        if (result.getStatusCode() == HttpStatus.OK) {
+            Assignment assignment = (Assignment) result.getBody();
+            assignmentRepository.save(assignment); // DB에 저장
+            return ResponseEntity.ok().build(); // 성공일때는 body 빼고 다시 반환
+        }
+        return result; // 오류코드일때는 그대로 반환
     }
 
     @PutMapping("/{assignmentId}")

@@ -2,6 +2,7 @@ package springbeam.susukgwan.review;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import springbeam.susukgwan.review.dto.ReviewRequestDTO;
@@ -11,10 +12,17 @@ import springbeam.susukgwan.review.dto.ReviewRequestDTO;
 @RequestMapping("/api/review")
 public class ReviewController {
     private final ReviewService reviewService;
+    private final ReviewRepository reviewRepository;
 
     @PostMapping("")
     public ResponseEntity<?> createReview (@Valid @RequestBody ReviewRequestDTO.Create createReview){
-        return reviewService.createReview(createReview);
+        ResponseEntity result = reviewService.createReview(createReview);
+        if (result.getStatusCode() == HttpStatus.OK) {
+            Review review = (Review) result.getBody();
+            reviewRepository.save(review); // DB에 저장
+            return ResponseEntity.ok().build(); // 성공일때는 body 빼고 다시 반환
+        }
+        return result; // 오류코드일때는 그대로 반환
     }
 
     @PutMapping("/{reviewId}")
