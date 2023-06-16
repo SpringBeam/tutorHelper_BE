@@ -17,6 +17,7 @@ public class AssignmentResponseDTO {
     private List<Long> frequency;
     private String amount;
     private Boolean isCompleted;
+    private Long noteId;
 
     public AssignmentResponseDTO (Assignment assignment) {
         this.id = assignment.getId();
@@ -26,5 +27,6 @@ public class AssignmentResponseDTO {
         this.frequency = assignment.getFrequency();
         this.amount = assignment.getAmount();
         this.isCompleted = assignment.getIsCompleted();
+        this.noteId = assignment.getNote().getId();
     }
 }

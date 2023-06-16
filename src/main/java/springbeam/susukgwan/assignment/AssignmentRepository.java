@@ -47,4 +47,13 @@ public interface AssignmentRepository extends JpaRepository<Assignment, Long> {
     Long GetParentIdOfAssignment(@Param(value = "assignmentId") Long assignmentId);
 
     List<Assignment> findByNote(Note note);
+
+    @Query(
+            value = "SELECT * " +
+                    "FROM susukgwan.assignment " +
+                    "WHERE note_id IN (SELECT id FROM susukgwan.note WHERE tutoring_id = :tutoringId)" +
+                    "ORDER BY is_completed, start_date DESC",
+            nativeQuery = true
+    )
+    List<Assignment> GetAssignmentListByTutoringId (@Param(value = "tutoringId") Long tutoringId);
 }
