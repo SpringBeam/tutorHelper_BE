@@ -8,9 +8,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import springbeam.susukgwan.ResponseMsg;
 import springbeam.susukgwan.ResponseMsgList;
-import springbeam.susukgwan.assignment.Assignment;
-import springbeam.susukgwan.assignment.AssignmentRepository;
-import springbeam.susukgwan.assignment.AssignmentService;
+import springbeam.susukgwan.S3Service;
+import springbeam.susukgwan.assignment.*;
 import springbeam.susukgwan.assignment.dto.AssignmentRequestDTO;
 import springbeam.susukgwan.note.dto.NoteRequestDTO;
 import springbeam.susukgwan.review.Review;
@@ -40,6 +39,8 @@ public class NoteService {
     private final ReviewRepository reviewRepository;
     private final TagRepository tagRepository;
     private final AssignmentRepository assignmentRepository;
+    private final SubmitRepository submitRepository;
+    private final S3Service s3Service;
 
     /* 수업일지 추가 */
     public ResponseEntity<?> createNote (NoteRequestDTO.Create createNote) {
@@ -242,5 +243,50 @@ public class NoteService {
         }
 
         return ResponseEntity.ok().build();
+    }
+
+    /* 수업일지 수정 (진도보고만) */
+    public ResponseEntity<?> updateNote (Long noteId, NoteRequestDTO.Update updateNote) {
+        Optional<Note> note = noteRepository.findById(noteId);
+        if (note.isPresent()) {
+            Note n = note.get();
+            n.setProgress(updateNote.getProgress());
+            noteRepository.save(n);
+            return ResponseEntity.ok().build();
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_NOTE.getMsg()));
+        }
+    }
+
+    /* 수업일지 삭제 (복습, 숙제, 숙제 인증피드 모두) */
+    public ResponseEntity<?> deleteNote (Long noteId) {
+        Optional<Note> note = noteRepository.findById(noteId);
+        if (note.isPresent()) {
+            List<Review> reviewList = reviewRepository.findByNote(note.get());
+            List<Assignment> assignmentList = assignmentRepository.findByNote(note.get());
+
+            if (!reviewList.isEmpty()) {
+                reviewRepository.deleteAll(reviewList); // 복습 삭제
+            }
+
+            if (!assignmentList.isEmpty()) {
+                for (Assignment a : assignmentList) {
+                    List<Submit> submitList = submitRepository.findByAssignment(a);
+                    for (Submit s : submitList) {
+                        List<String> S3Urls = s.getImageUrl();
+                        for (String url : S3Urls) {
+                            s3Service.delete(url);
+                        }
+                    }
+                    submitRepository.deleteAll(submitList); // 제출파일 삭제
+                }
+                assignmentRepository.deleteAll(assignmentList); // 숙제 삭제
+            }
+
+            noteRepository.deleteById(noteId); // 수업일지 삭제
+            return ResponseEntity.ok().build();
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_NOTE.getMsg()));
+        }
     }
 }

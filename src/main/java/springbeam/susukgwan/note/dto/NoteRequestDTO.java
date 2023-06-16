@@ -23,4 +23,11 @@ public class NoteRequestDTO {
         private List<ReviewRequestDTO.Create> reviewList; // 없을수도 있음
         private List<AssignmentRequestDTO.Create> assignmentList; // 없을수도 있음
     }
+
+    @Getter
+    @Setter
+    public static class Update {
+        @NotBlank
+        private String progress;
+    }
 }

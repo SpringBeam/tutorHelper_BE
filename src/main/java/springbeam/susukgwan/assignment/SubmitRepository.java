@@ -42,4 +42,6 @@ public interface SubmitRepository extends JpaRepository<Submit, Long> {
             nativeQuery = true
     )
     Long GetTutorIdOfSubmit(@Param(value = "submitId") Long submitId);
+
+    List<Submit> findByAssignment(Assignment assignment);
 }

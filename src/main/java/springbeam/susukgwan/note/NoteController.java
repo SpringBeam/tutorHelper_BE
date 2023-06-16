@@ -3,10 +3,7 @@ package springbeam.susukgwan.note;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import springbeam.susukgwan.note.dto.NoteRequestDTO;
 
 @RestController
@@ -18,5 +15,15 @@ public class NoteController {
     @PostMapping("")
     public ResponseEntity<?> createNote (@Valid @RequestBody NoteRequestDTO.Create createNote) {
         return noteService.createNote(createNote);
+    }
+
+    @PutMapping("/{noteId}")
+    public ResponseEntity<?> updateNote (@PathVariable("noteId") Long noteId, @Valid @RequestBody NoteRequestDTO.Update updateNote) {
+        return noteService.updateNote(noteId, updateNote);
+    }
+
+    @DeleteMapping("/{noteId}")
+    public ResponseEntity<?> deleteNote (@PathVariable("noteId") Long noteId) {
+        return noteService.deleteNote(noteId);
     }
 }
