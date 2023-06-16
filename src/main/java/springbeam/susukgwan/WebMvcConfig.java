@@ -7,6 +7,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import springbeam.susukgwan.assignment.interceptor.AssignmentAuthInterceptor;
 import springbeam.susukgwan.assignment.interceptor.AssignmentRoleInterceptor;
 import springbeam.susukgwan.assignment.interceptor.SubmitTuteeInterceptor;
+import springbeam.susukgwan.note.NoteAuthInterceptor;
 import springbeam.susukgwan.review.ReviewAuthInterceptor;
 import springbeam.susukgwan.tag.TagAuthInterceptor;
 
@@ -22,6 +23,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
     SubmitTuteeInterceptor submitTuteeInterceptor;
     @Autowired
     AssignmentRoleInterceptor assignmentRoleInterceptor;
+    @Autowired
+    NoteAuthInterceptor noteAuthInterceptor;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
@@ -38,6 +41,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .addPathPatterns("/api/assignment/*/submit", "/api/assignment/submit/*");
         registry.addInterceptor(assignmentRoleInterceptor)
                 .addPathPatterns("/api/assignment/*/submit/list", "/api/assignment/submit/*/evaluate");
+        registry.addInterceptor(noteAuthInterceptor)
+                .excludePathPatterns("/api/note")
+                .addPathPatterns("/api/note/**");
     }
 
 }
