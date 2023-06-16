@@ -12,6 +12,7 @@ import springbeam.susukgwan.S3Service;
 import springbeam.susukgwan.assignment.*;
 import springbeam.susukgwan.assignment.dto.AssignmentRequestDTO;
 import springbeam.susukgwan.note.dto.NoteRequestDTO;
+import springbeam.susukgwan.note.dto.NoteResponseDTO;
 import springbeam.susukgwan.review.Review;
 import springbeam.susukgwan.review.ReviewRepository;
 import springbeam.susukgwan.review.ReviewService;
@@ -243,6 +244,27 @@ public class NoteService {
         }
 
         return ResponseEntity.ok().build();
+    }
+
+    /* 수업일지 보기 */
+    public ResponseEntity<?> getNote (Long noteId) {
+        Optional<Note> note = noteRepository.findById(noteId);
+        Long userId = Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
+
+        if (note.isPresent()) {
+            List<Long> users = new ArrayList<>();
+            users.add(note.get().getTutoring().getTutorId());
+            users.add(note.get().getTutoring().getTuteeId());
+            users.add(note.get().getTutoring().getParentId());
+            if (!users.contains(userId)) { // 해당 수업의 선생님, 학생, 학부모만 접근 가능
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ResponseMsg(ResponseMsgList.NOT_AUTHORIZED.getMsg()));
+            }
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_NOTE.getMsg()));
+        }
+
+        NoteResponseDTO noteResponseDTO = new NoteResponseDTO(note.get());
+        return ResponseEntity.ok().body(noteResponseDTO);
     }
 
     /* 수업일지 수정 (진도보고만) */

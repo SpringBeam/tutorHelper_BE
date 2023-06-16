@@ -10,12 +10,14 @@ import springbeam.susukgwan.ResponseMsg;
 import springbeam.susukgwan.ResponseMsgList;
 import springbeam.susukgwan.S3Service;
 import springbeam.susukgwan.assignment.dto.AssignmentRequestDTO;
+import springbeam.susukgwan.assignment.dto.AssignmentResponseDTO;
 import springbeam.susukgwan.assignment.dto.SubmitResponseDTO;
 import springbeam.susukgwan.note.Note;
 import springbeam.susukgwan.note.NoteRepository;
 import springbeam.susukgwan.tutoring.Tutoring;
 import springbeam.susukgwan.tutoring.TutoringRepository;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -120,5 +122,32 @@ public class AssignmentService {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_SUBMIT.getMsg()));
         }
         return ResponseEntity.ok().body(responseList);
+    }
+
+    /* 전체 숙제 내역 */
+    public ResponseEntity<?> listAssignment (AssignmentRequestDTO.ListRequest listAssignment) {
+        Optional<Tutoring> tutoring = tutoringRepository.findById(listAssignment.getTutoringId());
+        Long userId = Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
+
+        if (tutoring.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_TUTORING.getMsg()));
+        } else {
+            List<Long> users = new ArrayList<>();
+            users.add(tutoring.get().getTutorId());
+            users.add(tutoring.get().getTuteeId());
+            users.add(tutoring.get().getParentId());
+            if (!users.contains(userId)) { // 해당 수업의 선생님, 학생, 학부모만 접근 가능
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ResponseMsg(ResponseMsgList.NOT_AUTHORIZED.getMsg()));
+            }
+        }
+
+        List<Assignment> assignmentList = assignmentRepository.GetAssignmentListByTutoringId(listAssignment.getTutoringId());
+        List<AssignmentResponseDTO> responseDTOList = assignmentList.stream().map(o->new AssignmentResponseDTO(o)).collect(Collectors.toList());
+
+        if (responseDTOList.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_ASSIGNMENT.getMsg()));
+        }
+
+        return ResponseEntity.ok(responseDTOList);
     }
 }

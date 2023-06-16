@@ -43,4 +43,11 @@ public class AssignmentRequestDTO {
         @NotNull
         private Boolean isCompleted;
     }
+
+    @Getter
+    @Setter
+    public static class ListRequest {
+        @NotNull
+        private Long tutoringId;
+    }
 }

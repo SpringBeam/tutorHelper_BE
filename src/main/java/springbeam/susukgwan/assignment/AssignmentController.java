@@ -65,4 +65,9 @@ public class AssignmentController {
     public ResponseEntity<?> listSubmit (@PathVariable("assignmentId") Long assignmentId) {
         return assignmentService.submitListOfAssignment(assignmentId);
     }
+
+    @PostMapping("/list")
+    public ResponseEntity<?> listAssignment (@Valid @RequestBody AssignmentRequestDTO.ListRequest listAssignment) {
+        return assignmentService.listAssignment(listAssignment);
+    }
 }
