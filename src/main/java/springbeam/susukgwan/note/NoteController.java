@@ -17,6 +17,11 @@ public class NoteController {
         return noteService.createNote(createNote);
     }
 
+    @GetMapping("/detail/{noteId}")
+    public ResponseEntity<?> getNote (@PathVariable("noteId") Long noteId) {
+        return noteService.getNote(noteId);
+    }
+
     @PutMapping("/{noteId}")
     public ResponseEntity<?> updateNote (@PathVariable("noteId") Long noteId, @Valid @RequestBody NoteRequestDTO.Update updateNote) {
         return noteService.updateNote(noteId, updateNote);

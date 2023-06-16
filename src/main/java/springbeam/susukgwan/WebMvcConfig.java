@@ -42,7 +42,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
         registry.addInterceptor(assignmentRoleInterceptor)
                 .addPathPatterns("/api/assignment/*/submit/list", "/api/assignment/submit/*/evaluate");
         registry.addInterceptor(noteAuthInterceptor)
-                .excludePathPatterns("/api/note")
+                .excludePathPatterns("/api/note", "/api/note/detail/**")
                 .addPathPatterns("/api/note/**");
     }
 

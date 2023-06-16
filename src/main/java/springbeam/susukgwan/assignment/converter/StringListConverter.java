@@ -1,6 +1,7 @@
 package springbeam.susukgwan.assignment.converter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.AttributeConverter;
@@ -26,8 +27,9 @@ public class StringListConverter implements AttributeConverter<List<String>, Str
     /* DB 테이블에서 가져올 때 String -> List<String> */
     @Override
     public List<String> convertToEntityAttribute(String dbData) {
+        TypeReference<List<String>> typeReference = new TypeReference<List<String>>() {};
         try {
-            return mapper.readValue(dbData, List.class);
+            return mapper.readValue(dbData, typeReference);
         } catch (IOException e) {
             throw new IllegalArgumentException();
         }
