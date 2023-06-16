@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import springbeam.susukgwan.note.Note;
 
 import java.util.List;
 
@@ -26,4 +27,6 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
             nativeQuery = true
     )
     Long GetTutorIdOfReview(@Param(value = "reviewId") Long reviewId);
+
+    List<Review> findByNote(Note note);
 }
