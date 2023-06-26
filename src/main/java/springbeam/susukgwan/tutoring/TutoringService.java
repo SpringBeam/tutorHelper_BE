@@ -8,6 +8,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import springbeam.susukgwan.ResponseMsg;
 import springbeam.susukgwan.ResponseMsgList;
+import springbeam.susukgwan.fcm.PushService;
 import springbeam.susukgwan.review.ReviewService;
 import springbeam.susukgwan.review.dto.ReviewRequestDTO;
 import springbeam.susukgwan.review.dto.ReviewResponseDTO;
@@ -49,6 +50,8 @@ public class TutoringService {
     private ScheduleService scheduleService;
     @Autowired
     private ReviewService reviewService;
+    @Autowired
+    private PushService pushService;
 
     public ResponseEntity<?> registerTutoring (RegisterTutoringDTO registerTutoringDTO) {
         /* TODO 선생, 학생 및 과목 중복 확인 -> 중복 요청 시 BAD REQUEST 반환 (나중에) */
@@ -180,6 +183,7 @@ public class TutoringService {
             tutoring.setParentId(userId);
         }
         tutoringRepository.save(tutoring);
+        pushService.approveInvitationNotification(tutoring, user);
         return ResponseEntity.ok().build();
     }
     public ResponseEntity<?> withdrawFromTutoring(Long tutoringId) {

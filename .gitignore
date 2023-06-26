@@ -7,6 +7,7 @@ build/
 
 
 **/*.properties
+**/resources/fcm
 
 ### STS ###
 .apt_generated
