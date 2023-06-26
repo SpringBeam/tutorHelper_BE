@@ -7,6 +7,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import springbeam.susukgwan.ResponseMsg;
 import springbeam.susukgwan.ResponseMsgList;
+import springbeam.susukgwan.fcm.FCMToken;
+import springbeam.susukgwan.fcm.FCMTokenRepository;
 import springbeam.susukgwan.user.dto.SignUpSocialUserDTO;
 import springbeam.susukgwan.user.dto.UpdateDTO;
 import springbeam.susukgwan.user.vo.UserDetailVO;
@@ -17,6 +19,8 @@ import java.util.Optional;
 public class UserService {
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private FCMTokenRepository fcmTokenRepository;
 
     public ResponseEntity<?> signUpSocialUser(SignUpSocialUserDTO signUpSocialUserDTO) {
         String userIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -70,6 +74,11 @@ public class UserService {
         String userIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
         Long userId = Long.parseLong(userIdStr);
         Optional<User> userOptional = userRepository.findById(userId);
+        // fcm 관련 임시 추가 내용. (onetoone 맵핑 보류)
+        Optional<FCMToken> fcmOptional = fcmTokenRepository.findByUserId(userId);
+        if (fcmOptional.isPresent()) {
+            fcmTokenRepository.delete(fcmOptional.get());
+        }
         if (userOptional.isPresent()) {
             userRepository.delete(userOptional.get());
             return ResponseEntity.ok().build();

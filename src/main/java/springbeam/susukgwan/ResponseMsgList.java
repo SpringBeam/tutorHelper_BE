@@ -30,7 +30,8 @@ public enum ResponseMsgList {
     ALREADY_CANCELLED("이미 취소된 수업입니다."),
     IMPOSSIBLE_TIME("수업일시로 등록된 시간이 아닙니다."),
     USER_ALREADY_EXISTS("중복된 아이디입니다."),
-    NO_SUCH_USERID_AND_PASSWORD("아이디가 존재하지 않거나 비밀번호가 잘못 입력되었습니다.")
+    NO_SUCH_USERID_AND_PASSWORD("아이디가 존재하지 않거나 비밀번호가 잘못 입력되었습니다."),
+    NO_FCM_TOKEN_ISSUED("알림에 필요한 FCM 토큰이 저장되지 않았습니다.")
     ;
 
     private final String msg;

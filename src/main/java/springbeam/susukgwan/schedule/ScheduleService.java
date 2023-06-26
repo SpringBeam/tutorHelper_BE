@@ -8,6 +8,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import springbeam.susukgwan.ResponseMsg;
 import springbeam.susukgwan.ResponseMsgList;
+import springbeam.susukgwan.fcm.PushService;
 import springbeam.susukgwan.schedule.dto.ChangeRegularDTO;
 import springbeam.susukgwan.schedule.dto.GetScheduleDTO;
 import springbeam.susukgwan.schedule.dto.ScheduleDTO;
@@ -38,6 +39,8 @@ public class ScheduleService {
     private UserRepository userRepository;
     @Autowired
     private TimeRepository timeRepository;
+    @Autowired
+    private PushService pushService;
 
     public ResponseEntity<?> newIrregularSchedule(ScheduleDTO scheduleDTO) {
         // Check whether the request user actually has this tutoring.
@@ -60,9 +63,10 @@ public class ScheduleService {
             // if the dateTime is preoccupied by a certain regular time, return that time.
             Time time = isPreoccupiedDateTime(tutoring, date, day, startTime, endTime);
             if (time != null) {
-                Optional<User> tuteeOptional = userRepository.findById(tutoring.getTuteeId());
                 String tuteeName = "";
-                if (tuteeOptional.isPresent()) {
+                // get one's name if tutee is registered
+                if (tutoring.getTuteeId()!=null && userRepository.findById(tutoring.getTuteeId()).isPresent()) {
+                    Optional<User> tuteeOptional = userRepository.findById(tutoring.getTuteeId());
                     tuteeName = tuteeOptional.get().getName();
                 }
                 String subjectName = tutoring.getSubject().getName();
@@ -79,8 +83,9 @@ public class ScheduleService {
             {
                 String tuteeName = "";
                 Tutoring overlappedTutoring = irregular.getTutoring(); // tutoring 존재 x의 경우는 일단 무시 tutoring 삭제 시 정규취소, irregular 취소 모두 삭제되도록 해야 됨.
-                Optional <User> tuteeOptional = userRepository.findById(overlappedTutoring.getTuteeId());
-                if (tuteeOptional.isPresent()) {
+                // get one's name if tutee is registered
+                if (overlappedTutoring.getTuteeId()!=null && userRepository.findById(overlappedTutoring.getTuteeId()).isPresent()) {
+                    Optional <User> tuteeOptional = userRepository.findById(overlappedTutoring.getTuteeId());
                     tuteeName = tuteeOptional.get().getName();
                 }
                 String subjectName = overlappedTutoring.getSubject().getName();
@@ -92,6 +97,7 @@ public class ScheduleService {
         Irregular newIrregular = Irregular.builder().date(date).startTime(startTime).endTime(endTime)
                 .tutoring(targetTutoring).tutorId(tutorId).build();
         irregularRepository.save(newIrregular);
+        pushService.newIrregularScheduleNotification(targetTutoring, date, startTime, endTime);
         return ResponseEntity.ok().build();
     }
 
@@ -116,6 +122,7 @@ public class ScheduleService {
                 if (cancellationOptional.isEmpty()) {
                     Cancellation newCancellation = Cancellation.builder().cancelledDateTime(LocalDateTime.of(date, startTime)).tutoring(targetTutoring).tutorId(tutorId).build();
                     cancellationRepository.save(newCancellation);
+                    pushService.cancelScheduleNotification(targetTutoring, date, startTime);
                     return ResponseEntity.ok().build();
                 }
             }
@@ -126,6 +133,7 @@ public class ScheduleService {
         for (Irregular irregular: irregularList) {
             if (date.isEqual(irregular.getDate()) && startTime.equals(irregular.getStartTime())) {
                 irregularRepository.delete(irregular);
+                pushService.cancelScheduleNotification(targetTutoring, date, startTime);
                 return ResponseEntity.ok().build();
             }
         }
@@ -160,10 +168,9 @@ public class ScheduleService {
             for (Time time : timeList) {
                 Time conflictTime = isPreoccupiedDayTime(tutoring, time);
                 if (conflictTime != null) {
-                    Optional<User> tuteeOptional = userRepository.findById(tutoring.getTuteeId());
                     String tuteeName = "";
-                    if (tuteeOptional.isPresent()) {
-                        tuteeName = tuteeOptional.get().getName();
+                    if (tutoring.getTuteeId()!=null && userRepository.findById(tutoring.getTuteeId()).isPresent()) {
+                        tuteeName = userRepository.findById(tutoring.getTuteeId()).get().getName();
                     }
                     String subjectName = tutoring.getSubject().getName();
                     // 아래 요일 정보 보내주기 고민
@@ -185,9 +192,8 @@ public class ScheduleService {
                 {
                     String tuteeName = "";
                     Tutoring overlappedTutoring = irregular.getTutoring();
-                    Optional <User> tuteeOptional = userRepository.findById(overlappedTutoring.getTuteeId());
-                    if (tuteeOptional.isPresent()) {
-                        tuteeName = tuteeOptional.get().getName();
+                    if (overlappedTutoring.getTuteeId()!=null && userRepository.findById(overlappedTutoring.getTuteeId()).isPresent()) {
+                        tuteeName = userRepository.findById(overlappedTutoring.getTuteeId()).get().getName();
                     }
                     String subjectName = overlappedTutoring.getSubject().getName();
                     String errorMessage = tuteeName + " 학생 " + subjectName + " 비정기 수업과 겹칩니다. 해당 일정 삭제 후 변경 가능 (" + irregular.getDate().toString() + " " + irregular.getStartTime().toString() + "~" + irregular.getEndTime().toString() + ")";
@@ -210,6 +216,7 @@ public class ScheduleService {
         }
         timeRepository.deleteByTutoringId(targetTutoring.getId());
         timeRepository.saveAllAndFlush(timeList);
+        pushService.changeRegularScheduleNotification(targetTutoring, changeRegularDTO.getDayTime());
         return ResponseEntity.ok().build();
         /* 에러 발생 부분, 서로 연관관계가 있는 entity의 경우 같은 transaction 안에서 삭제하게 되면 존재하지 않는 entity를 한 쪽이 갖게 됨.
            그래서 내부적으로 동기화가 강제적으로 진행돼서, 변경되지 않는 것. ->
@@ -238,10 +245,9 @@ public class ScheduleService {
             for (Time time : timeList) {
                 Time conflictTime = isPreoccupiedDayTime(tutoring, time);
                 if (conflictTime != null) {
-                    Optional<User> tuteeOptional = userRepository.findById(tutoring.getTuteeId());
                     String tuteeName = "";
-                    if (tuteeOptional.isPresent()) {
-                        tuteeName = tuteeOptional.get().getName();
+                    if (tutoring.getTuteeId()!=null && userRepository.findById(tutoring.getTuteeId()).isPresent()) {
+                        tuteeName = userRepository.findById(tutoring.getTuteeId()).get().getName();
                     }
                     String subjectName = tutoring.getSubject().getName();
                     // 아래 요일 정보 보내주기 고민
@@ -262,9 +268,8 @@ public class ScheduleService {
                 {
                     String tuteeName = "";
                     Tutoring overlappedTutoring = irregular.getTutoring();
-                    Optional <User> tuteeOptional = userRepository.findById(overlappedTutoring.getTuteeId());
-                    if (tuteeOptional.isPresent()) {
-                        tuteeName = tuteeOptional.get().getName();
+                    if (overlappedTutoring.getTuteeId()!=null && userRepository.findById(overlappedTutoring.getTuteeId()).isPresent()) {
+                        tuteeName = userRepository.findById(overlappedTutoring.getTuteeId()).get().getName();
                     }
                     String subjectName = overlappedTutoring.getSubject().getName();
                     String errorMessage = tuteeName + " 학생 " + subjectName + " 비정기 수업과 겹칩니다. 해당 일정 삭제 후 변경 가능 (" + irregular.getDate().toString() + " " + irregular.getStartTime().toString() + "~" + irregular.getEndTime().toString() + ")";
