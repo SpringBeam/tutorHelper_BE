@@ -22,4 +22,5 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
             nativeQuery = true
     )
     Long GetTutorIdOfNote(@Param(value = "noteId") Long noteId);
+    List<Note> findAllByTutoring(Tutoring tutoring);
 }

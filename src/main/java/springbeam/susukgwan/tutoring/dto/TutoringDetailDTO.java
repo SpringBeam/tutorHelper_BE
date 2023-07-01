@@ -1,6 +1,7 @@
 package springbeam.susukgwan.tutoring.dto;
 
 import lombok.*;
+import springbeam.susukgwan.assignment.dto.AssignmentResponseDTO;
 import springbeam.susukgwan.review.dto.ReviewResponseDTO;
 import springbeam.susukgwan.schedule.dto.ScheduleInfoResponseDTO;
 
@@ -21,4 +22,6 @@ public class TutoringDetailDTO {
     private String dayTime;
     private List<ScheduleInfoResponseDTO> scheduleList;
     private List<ReviewResponseDTO> reviewList;
+    private List<AssignmentResponseDTO> assignmentList;
+    private List<NoteSimpleInfoDTO> noteList;
 }

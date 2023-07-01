@@ -8,7 +8,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import springbeam.susukgwan.ResponseMsg;
 import springbeam.susukgwan.ResponseMsgList;
+import springbeam.susukgwan.assignment.AssignmentService;
+import springbeam.susukgwan.assignment.dto.AssignmentResponseDTO;
 import springbeam.susukgwan.fcm.PushService;
+import springbeam.susukgwan.note.Note;
+import springbeam.susukgwan.note.NoteService;
 import springbeam.susukgwan.review.ReviewService;
 import springbeam.susukgwan.review.dto.ReviewRequestDTO;
 import springbeam.susukgwan.review.dto.ReviewResponseDTO;
@@ -50,6 +54,10 @@ public class TutoringService {
     private ScheduleService scheduleService;
     @Autowired
     private ReviewService reviewService;
+    @Autowired
+    private AssignmentService assignmentService;
+    @Autowired
+    private NoteService noteService;
     @Autowired
     private PushService pushService;
 
@@ -319,10 +327,18 @@ public class TutoringService {
         }
         tutoringDetailDTO.setReviewList(reviewResponseDTOS);
 
-        // get assignment list
+        // get assignment list and set
+        List<AssignmentResponseDTO> assignmentResponseDTOS = assignmentService.assignmentListForDetail(tutoring);
+        tutoringDetailDTO.setAssignmentList(assignmentResponseDTOS);
 
-
-        // get note list
+        // get note list and set
+        List<Note> noteList = noteService.noteListForDetail(tutoring, year, month);
+        List<NoteSimpleInfoDTO> noteSimpleInfoDTOS = noteList.stream().map(n -> NoteSimpleInfoDTO.builder()
+                .noteId(n.getId())
+                .date(String.valueOf(n.getDateTime().getDayOfMonth()))
+                .startTime(n.getDateTime().toLocalTime().toString())
+                .build()).toList();
+        tutoringDetailDTO.setNoteList(noteSimpleInfoDTOS);
 
         return ResponseEntity.ok(tutoringDetailDTO);
     }
