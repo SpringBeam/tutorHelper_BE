@@ -154,7 +154,7 @@ public class ReviewService {
         return ResponseEntity.ok().body(responseList); // DTO로 반환 (순환참조 방지)
     }
 
-    /* 복습내역 응답용 리스트 반환 for getTutoringDetail() in tutoringService */
+    /* 전체 복습내역 리스트 반환 for getTutoringDetail() in tutoringService */
     public List<ReviewResponseDTO> reviewListForDetail(Tutoring tutoring) {
         // tutoring 확인 후 호출됨.
         List<Review> reviewList = reviewRepository.GetReviewListbyTutoringId(tutoring.getId());

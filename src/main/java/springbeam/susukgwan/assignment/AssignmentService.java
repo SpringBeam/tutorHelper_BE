@@ -150,4 +150,10 @@ public class AssignmentService {
 
         return ResponseEntity.ok(responseDTOList);
     }
+    /* 전체 숙제 내역 반환 for getTutoringDetail() in tutoringService */
+    public List<AssignmentResponseDTO> assignmentListForDetail(Tutoring tutoring) {
+        List<Assignment> assignmentList = assignmentRepository.GetAssignmentListByTutoringId(tutoring.getId());
+        List<AssignmentResponseDTO> responseList = assignmentList.stream().map(o->new AssignmentResponseDTO(o)).collect(Collectors.toList());
+        return responseList;
+    }
 }

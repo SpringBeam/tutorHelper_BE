@@ -24,6 +24,7 @@ import springbeam.susukgwan.tag.TagRepository;
 import springbeam.susukgwan.tutoring.Tutoring;
 import springbeam.susukgwan.tutoring.TutoringRepository;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
@@ -310,5 +311,14 @@ public class NoteService {
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_NOTE.getMsg()));
         }
+    }
+    /* 전체 일지내역 리스트 반환 for getTutoringDetail() in tutoringService */
+    public List<Note> noteListForDetail(Tutoring tutoring, int year, int month) {
+        LocalDate targetDate = LocalDate.of(year, month, 1);
+        List<Note> noteList = noteRepository.findAllByTutoring(tutoring);
+        noteList = noteList.stream().filter(n ->
+                (n.getDateTime().getYear() == targetDate.getYear() && n.getDateTime().getMonth() == targetDate.getMonth())
+        ).toList();
+        return noteList;
     }
 }
