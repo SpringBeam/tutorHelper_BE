@@ -379,30 +379,15 @@ public class ScheduleService {
           */
     }
     public ResponseEntity<?> getScheduleListYearMonth(Long tutoringId, int year, int month) {
-        // Check whether the request user is the tutor/tutee of this tutoring. (parent 보류)
-        String userIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
-        Long userId = Long.parseLong(userIdStr);
-        Optional<User> userOptional = userRepository.findById(userId);
-        if (userOptional.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(new ResponseMsg(ResponseMsgList.NO_SUCH_USER_IN_DB.getMsg()));
+        // Check whether the request user is the tutor/tutee of this tutoring. (and parent)
+        Long userId = Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
+        Optional<Tutoring> tutoringOptional = tutoringRepository.findById(tutoringId);
+        if (tutoringOptional.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NO_SUCH_TUTORING.getMsg()));
         }
-        User requestUser = userOptional.get();
-        Tutoring tutoring;
-        if (requestUser.getRole() == Role.TUTOR) {
-            Optional<Tutoring> tutoringOptional = tutoringRepository.findByIdAndTutorId(tutoringId, userId);
-            if (tutoringOptional.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NO_SUCH_TUTORING.getMsg()));
-            }
-            else tutoring = tutoringOptional.get();
-        }
-        else if (requestUser.getRole() == Role.TUTEE) {
-            Optional<Tutoring> tutoringOptional = tutoringRepository.findByIdAndTuteeId(tutoringId, userId);
-            if (tutoringOptional.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NO_SUCH_TUTORING.getMsg()));
-            }
-            else tutoring = tutoringOptional.get();
-        }
-        else return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        Tutoring tutoring = tutoringOptional.get();
+        if (!userId.equals(tutoring.getTutorId()) && !userId.equals(tutoring.getTuteeId()) && !userId.equals(tutoring.getParentId()))
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 
         // get LocalDateTime object of the corresponding year and month
         LocalDate targetDate = LocalDate.of(year, month, 1);
@@ -477,7 +462,7 @@ public class ScheduleService {
     }
 
     public ResponseEntity<?> getAllScheduleListYearMonth(int year, int month) {
-        // get all request user's tutoring list (parent 보류)
+        // get all request user's tutoring list
         String userIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
         Long userId = Long.parseLong(userIdStr);
         Optional<User> userOptional = userRepository.findById(userId);
@@ -491,6 +476,9 @@ public class ScheduleService {
         }
         else if (requestUser.getRole() == Role.TUTEE) {
             tutoringList = tutoringRepository.findAllByTuteeId(userId);
+        }
+        else if (requestUser.getRole() == Role.PARENT) {
+            tutoringList = tutoringRepository.findAllByParentId(userId);
         }
         else {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -506,9 +494,23 @@ public class ScheduleService {
             // set basic info
             AllScheduleInfoResponseDTO allScheduleInfoResponseDTO = AllScheduleInfoResponseDTO.builder().build();
             allScheduleInfoResponseDTO.setTutoringId(tutoring.getId());
+            allScheduleInfoResponseDTO.setColor(0);
             if (requestUser.getRole() == Role.TUTOR) {
                 if (tutoring.getTuteeId() != null && userRepository.findById(tutoring.getTuteeId()).isPresent()) {
                     allScheduleInfoResponseDTO.setPersonName(userRepository.findById(tutoring.getTuteeId()).get().getName());
+                }
+                // set tutor color if exists
+                if (tutoring.getColor() != null) {
+                    allScheduleInfoResponseDTO.setColor(tutoring.getColor().getTutorColor().getValue());
+                }
+            }
+            else if (requestUser.getRole() == Role.TUTEE) {
+                if (userRepository.findById(tutoring.getTutorId()).isPresent()) {
+                    allScheduleInfoResponseDTO.setPersonName(userRepository.findById(tutoring.getTutorId()).get().getName());
+                }
+                // set tutee color if exists
+                if (tutoring.getColor() != null) {
+                    allScheduleInfoResponseDTO.setColor(tutoring.getColor().getTuteeColor().getValue());
                 }
             }
             else {

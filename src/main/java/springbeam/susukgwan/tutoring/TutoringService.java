@@ -292,13 +292,18 @@ public class TutoringService {
     /* get all info for tutoring overview (basic info for tutoring, schedule of month, noteList, assignmentList, reviewList) */
     public ResponseEntity<?> getTutoringDetail(Long tutoringId, int year, int month) {
         // Check whether the request user actually has this tutoring.
-        String tutorIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
-        Long tutorId = Long.parseLong(tutorIdStr);
-        Optional<Tutoring> tutoringOptional = tutoringRepository.findByIdAndTutorId(tutoringId, tutorId);
+        Long userId = Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
+        Optional<Tutoring> tutoringOptional = tutoringRepository.findById(tutoringId);
         if (tutoringOptional.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NO_SUCH_TUTORING.getMsg()));
         }
         Tutoring tutoring = tutoringOptional.get();
+        Role role = Role.NONE;
+        if (userId.equals(tutoring.getTutorId())) role = Role.TUTOR;
+        else if (userId.equals(tutoring.getTuteeId())) role = Role.TUTEE;
+        else if (userId.equals(tutoring.getParentId())) role = Role.PARENT;
+        else return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+
         // get basic info of tutoring
         TutoringDetailDTO tutoringDetailDTO = TutoringDetailDTO.builder()
                 .tutoringId(tutoring.getId())
@@ -307,7 +312,12 @@ public class TutoringService {
                 .parentName("")
                 .startDate(tutoring.getStartDate().toString())
                 .dayTime(makeDayTimeString(tutoring.getTimes()))
+                .color(0)
         .build();
+        if (tutoring.getColor() != null) {
+            if (role == Role.TUTOR) tutoringDetailDTO.setColor(tutoring.getColor().getTutorColor().getValue());
+            else if (role == Role.TUTEE) tutoringDetailDTO.setColor(tutoring.getColor().getTuteeColor().getValue());
+        }
         if (tutoring.getTuteeId()!=null && userRepository.findById(tutoring.getTuteeId()).isPresent()) {
             tutoringDetailDTO.setTuteeName(userRepository.findById(tutoring.getTuteeId()).get().getName());
         }

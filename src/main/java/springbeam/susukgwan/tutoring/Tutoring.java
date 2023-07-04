@@ -8,6 +8,7 @@ import springbeam.susukgwan.schedule.Cancellation;
 import springbeam.susukgwan.schedule.Irregular;
 import springbeam.susukgwan.schedule.Time;
 import springbeam.susukgwan.subject.Subject;
+import springbeam.susukgwan.tutoring.color.Color;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -44,6 +45,9 @@ public class Tutoring {
 
     @OneToMany(mappedBy = "tutoring", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private final List<Note> notes = new ArrayList<>(); // 수업일지들
+
+    @OneToOne(mappedBy = "tutoring", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private Color color;
 
     @Column(nullable = false)
     private Long tutorId; // 선생 ID
