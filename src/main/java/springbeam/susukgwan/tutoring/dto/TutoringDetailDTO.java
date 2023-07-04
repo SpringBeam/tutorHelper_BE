@@ -14,6 +14,7 @@ import java.util.List;
 @NoArgsConstructor
 public class TutoringDetailDTO {
     private Long tutoringId;
+    private int color;
     private String subject;
     private String tutorName;
     private String tuteeName;

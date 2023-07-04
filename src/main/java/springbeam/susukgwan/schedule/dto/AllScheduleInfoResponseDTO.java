@@ -14,6 +14,7 @@ public class AllScheduleInfoResponseDTO {
     private Long tutoringId;
     private String personName;
     private String subject;
+    private int color;
     private List<ScheduleInfoResponseDTO> scheduleList;
     private List<NoteSimpleInfoDTO> noteList;
 }
