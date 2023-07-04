@@ -9,12 +9,13 @@ import org.springframework.stereotype.Service;
 import springbeam.susukgwan.ResponseMsg;
 import springbeam.susukgwan.ResponseMsgList;
 import springbeam.susukgwan.fcm.PushService;
-import springbeam.susukgwan.schedule.dto.ChangeRegularDTO;
-import springbeam.susukgwan.schedule.dto.GetScheduleDTO;
-import springbeam.susukgwan.schedule.dto.ScheduleDTO;
-import springbeam.susukgwan.schedule.dto.ScheduleInfoResponseDTO;
+import springbeam.susukgwan.note.Note;
+import springbeam.susukgwan.note.NoteService;
+import springbeam.susukgwan.schedule.dto.*;
 import springbeam.susukgwan.tutoring.Tutoring;
 import springbeam.susukgwan.tutoring.TutoringRepository;
+import springbeam.susukgwan.tutoring.dto.NoteSimpleInfoDTO;
+import springbeam.susukgwan.user.Role;
 import springbeam.susukgwan.user.User;
 import springbeam.susukgwan.user.UserRepository;
 
@@ -39,6 +40,8 @@ public class ScheduleService {
     private UserRepository userRepository;
     @Autowired
     private TimeRepository timeRepository;
+    @Autowired
+    private NoteService noteService;
     @Autowired
     private PushService pushService;
 
@@ -287,17 +290,32 @@ public class ScheduleService {
           */
     }
     public ResponseEntity<?> getScheduleListYearMonth(Long tutoringId, int year, int month) {
-        // Check whether the request user actually has this tutoring.
-        String tutorIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
-        Long tutorId = Long.parseLong(tutorIdStr);
-        Optional<Tutoring> tutoringOptional = tutoringRepository.findByIdAndTutorId(tutoringId, tutorId);
-        if (tutoringOptional.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NO_SUCH_TUTORING.getMsg()));
+        // Check whether the request user is the tutor/tutee of this tutoring. (parent 보류)
+        String userIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
+        Long userId = Long.parseLong(userIdStr);
+        Optional<User> userOptional = userRepository.findById(userId);
+        if (userOptional.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(new ResponseMsg(ResponseMsgList.NO_SUCH_USER_IN_DB.getMsg()));
         }
-        Tutoring tutoring = tutoringOptional.get();
+        User requestUser = userOptional.get();
+        Tutoring tutoring;
+        if (requestUser.getRole() == Role.TUTOR) {
+            Optional<Tutoring> tutoringOptional = tutoringRepository.findByIdAndTutorId(tutoringId, userId);
+            if (tutoringOptional.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NO_SUCH_TUTORING.getMsg()));
+            }
+            else tutoring = tutoringOptional.get();
+        }
+        else if (requestUser.getRole() == Role.TUTEE) {
+            Optional<Tutoring> tutoringOptional = tutoringRepository.findByIdAndTuteeId(tutoringId, userId);
+            if (tutoringOptional.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NO_SUCH_TUTORING.getMsg()));
+            }
+            else tutoring = tutoringOptional.get();
+        }
+        else return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 
-        // get LocalDateTime object
-        // String[] yearMonth = getScheduleDTO.getYearMonth().split(" ");
+        // get LocalDateTime object of the corresponding year and month
         LocalDate targetDate = LocalDate.of(year, month, 1);
 
         // times of the tutoring, scheduleList for the response, cancellations of the month, irregular list of the month
@@ -345,7 +363,8 @@ public class ScheduleService {
 
         // add irregular schedules
         for (Irregular i: irregularList) {
-            scheduleList.add(ScheduleInfoResponseDTO.builder()
+            scheduleList.add(
+                    ScheduleInfoResponseDTO.builder()
                     .date(Integer.toString(i.getDate().getDayOfMonth()))
                     .startTime(i.getStartTime().toString())
                     .endTime(i.getEndTime().toString())
@@ -366,8 +385,117 @@ public class ScheduleService {
                 }
             }
          */
+    }
 
+    public ResponseEntity<?> getAllScheduleListYearMonth(int year, int month) {
+        // get all request user's tutoring list (parent 보류)
+        String userIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
+        Long userId = Long.parseLong(userIdStr);
+        Optional<User> userOptional = userRepository.findById(userId);
+        if (userOptional.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(new ResponseMsg(ResponseMsgList.NO_SUCH_USER_IN_DB.getMsg()));
+        }
+        User requestUser = userOptional.get();
+        List<Tutoring> tutoringList;
+        if (requestUser.getRole() == Role.TUTOR) {
+            tutoringList = tutoringRepository.findAllByTutorId(userId);
+        }
+        else if (requestUser.getRole() == Role.TUTEE) {
+            tutoringList = tutoringRepository.findAllByTuteeId(userId);
+        }
+        else {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        if (tutoringList.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_TUTORING.getMsg()));
+        }
 
+        List<AllScheduleInfoResponseDTO> allScheduleInfoResponseDTOList = new ArrayList<>();
+        LocalDate targetDate = LocalDate.of(year, month, 1);
+        // Build basic info + scheduleList + noteList
+        for (Tutoring tutoring : tutoringList) {
+            // set basic info
+            AllScheduleInfoResponseDTO allScheduleInfoResponseDTO = AllScheduleInfoResponseDTO.builder().build();
+            allScheduleInfoResponseDTO.setTutoringId(tutoring.getId());
+            if (requestUser.getRole() == Role.TUTOR) {
+                if (tutoring.getTuteeId() != null && userRepository.findById(tutoring.getTuteeId()).isPresent()) {
+                    allScheduleInfoResponseDTO.setPersonName(userRepository.findById(tutoring.getTuteeId()).get().getName());
+                }
+            }
+            else {
+                if (userRepository.findById(tutoring.getTutorId()).isPresent()) {
+                    allScheduleInfoResponseDTO.setPersonName(userRepository.findById(tutoring.getTutorId()).get().getName());
+                }
+            }
+            allScheduleInfoResponseDTO.setSubject(tutoring.getSubject().getName());
+            // set scheduleList for this tutoring
+            // times of the tutoring, scheduleList for the response, cancellations of the month, irregular list of the month
+            List<Time> timeList = tutoring.getTimes();
+            List<ScheduleInfoResponseDTO> scheduleList = new ArrayList<>();
+            List<Cancellation> cancelledList = cancellationRepository.findAllByTutoring(tutoring).stream().filter(c ->
+                    (c.getCancelledDateTime().getYear() == targetDate.getYear() &&
+                            c.getCancelledDateTime().getMonth() == targetDate.getMonth())
+            ).toList();
+            List<Irregular> irregularList = irregularRepository.findAllByTutoring(tutoring).stream().filter(i ->
+                    (i.getDate().getYear() == targetDate.getYear() &&
+                            i.getDate().getMonth() == targetDate.getMonth())
+            ).toList();
+
+            // get regular schedules of the month (At first, compare targetDate with startDate)
+            if (targetDate.isAfter(tutoring.getStartDate().minusMonths(1))) {
+                for (int i=0; i<targetDate.lengthOfMonth(); i++) {
+                    if (targetDate.plusDays(i).isBefore(tutoring.getStartDate())) {
+                        continue;
+                    }
+                    DayOfWeek day = targetDate.getDayOfWeek().plus(i);
+                    for (Time time: timeList) {
+                        if (time.getDay().equals(day)) {
+                            scheduleList.add(ScheduleInfoResponseDTO.builder()
+                                    .date(Integer.toString(i+1))
+                                    .startTime(time.getStartTime().toString())
+                                    .endTime(time.getEndTime().toString())
+                                    .build());
+                        }
+                    }
+                }
+            }
+
+            // get rid of cancelled schedules
+            for (Cancellation c: cancelledList) {
+                Iterator <ScheduleInfoResponseDTO> it = scheduleList.iterator();
+                while(it.hasNext()) {
+                    ScheduleInfoResponseDTO s = it.next();
+                    if (c.getCancelledDateTime().getDayOfMonth() == Integer.parseInt(s.getDate()) &&
+                            c.getCancelledDateTime().toLocalTime().toString().equals(s.getStartTime())) {
+                        it.remove();
+                    }
+                }
+            }
+
+            // add irregular schedules
+            for (Irregular i: irregularList) {
+                scheduleList.add(
+                        ScheduleInfoResponseDTO.builder()
+                                .date(Integer.toString(i.getDate().getDayOfMonth()))
+                                .startTime(i.getStartTime().toString())
+                                .endTime(i.getEndTime().toString())
+                                .build()
+                );
+            }
+            allScheduleInfoResponseDTO.setScheduleList(scheduleList);
+
+            // get note list and set
+            List<Note> noteList = noteService.noteListForDetail(tutoring, year, month);
+            List<NoteSimpleInfoDTO> noteSimpleInfoDTOS = noteList.stream().map(n -> NoteSimpleInfoDTO.builder()
+                    .noteId(n.getId())
+                    .date(String.valueOf(n.getDateTime().getDayOfMonth()))
+                    .startTime(n.getDateTime().toLocalTime().toString())
+                    .build()).toList();
+            allScheduleInfoResponseDTO.setNoteList(noteSimpleInfoDTOS);
+            // add item to list
+            allScheduleInfoResponseDTOList.add(allScheduleInfoResponseDTO);
+        }
+        return ResponseEntity.ok(allScheduleInfoResponseDTOList);
     }
 
     private Time isPreoccupiedDateTime(Tutoring tutoring, LocalDate date, DayOfWeek day, LocalTime startTime, LocalTime endTime) {

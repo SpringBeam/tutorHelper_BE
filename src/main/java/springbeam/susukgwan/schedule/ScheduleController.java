@@ -33,4 +33,8 @@ public class ScheduleController {
     public ResponseEntity getScheduleList(@PathVariable("tutoringId") Long tutoringId, @PathVariable("year") int year, @PathVariable("month") int month) {
         return scheduleService.getScheduleListYearMonth(tutoringId, year, month);
     }
+    @GetMapping("/list/tutorings/{year}/{month}")
+    public ResponseEntity getAllScheduleList(@PathVariable("year") int year, @PathVariable("month") int month) {
+        return scheduleService.getAllScheduleListYearMonth(year, month);
+    }
 }

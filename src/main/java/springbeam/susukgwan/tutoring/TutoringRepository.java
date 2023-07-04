@@ -9,6 +9,7 @@ import java.util.Optional;
 @Repository
 public interface TutoringRepository extends JpaRepository<Tutoring, Long> {
     Optional<Tutoring> findByIdAndTutorId(Long id, Long tutorId);
+    Optional<Tutoring> findByIdAndTuteeId(Long id, Long tuteeId);
     List<Tutoring> findAllByTutorId(Long tutorId);
     List<Tutoring> findAllByTuteeId(Long tutorId);
     List<Tutoring> findAllByParentId(Long tutorId);
