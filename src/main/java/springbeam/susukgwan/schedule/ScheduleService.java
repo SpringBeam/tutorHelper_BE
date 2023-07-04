@@ -151,6 +151,95 @@ public class ScheduleService {
            위의 어느 경우에도 해당이 안되면 오류 반환.
          */
     }
+    public ResponseEntity<?> replaceSchedule(ReplaceScheduleDTO replaceScheduleDTO) {
+        // Check whether the request user actually has this tutoring.
+        String tutorIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
+        Long tutorId = Long.parseLong(tutorIdStr);
+        Optional<Tutoring> tutoringOptional = tutoringRepository.findByIdAndTutorId(replaceScheduleDTO.getTutoringId(), tutorId);
+        if (tutoringOptional.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NO_SUCH_TUTORING.getMsg()));
+        }
+        Tutoring targetTutoring = tutoringOptional.get();
+
+        // check whether the wanted schedule is available or not
+
+        // compare wanted day, startTime, endTime with regular schedule to check if it is preoccupied or not.
+        List<Tutoring> tutoringList = tutoringRepository.findAllByTutorId(tutorId);
+        LocalDate date = LocalDate.parse(replaceScheduleDTO.getDateWant(), DateTimeFormatter.ISO_DATE);
+        DayOfWeek day = date.getDayOfWeek();
+        LocalTime startTime = LocalTime.parse(replaceScheduleDTO.getStartTimeWant(), DateTimeFormatter.ISO_LOCAL_TIME);
+        LocalTime endTime = LocalTime.parse(replaceScheduleDTO.getEndTimeWant(), DateTimeFormatter.ISO_LOCAL_TIME);
+        for (Tutoring tutoring: tutoringList) {
+            // if the dateTime is preoccupied by a certain regular time, return that time.
+            Time time = isPreoccupiedDateTime(tutoring, date, day, startTime, endTime);
+            if (time != null) {
+                String tuteeName = "";
+                // get one's name if tutee is registered
+                if (tutoring.getTuteeId()!=null && userRepository.findById(tutoring.getTuteeId()).isPresent()) {
+                    Optional<User> tuteeOptional = userRepository.findById(tutoring.getTuteeId());
+                    tuteeName = tuteeOptional.get().getName();
+                }
+                String subjectName = tutoring.getSubject().getName();
+                String errorMessage = tuteeName + " 학생 " + subjectName + " 수업과 겹칩니다. (" + time.getStartTime().toString() + "~" + time.getEndTime().toString() + ")";
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(new ResponseMsg(errorMessage));
+            }
+        }
+        // check all irregular times
+        List<Irregular> irregularList = irregularRepository.findAllByTutorId(tutorId);
+        for (Irregular irregular: irregularList) {
+            if (date.isEqual(irregular.getDate()) &&
+                    isOverlapped(startTime, endTime, irregular.getStartTime(), irregular.getEndTime()))
+            {
+                String tuteeName = "";
+                Tutoring overlappedTutoring = irregular.getTutoring(); // tutoring 존재 x의 경우는 일단 무시 tutoring 삭제 시 정규취소, irregular 취소 모두 삭제되도록 해야 됨.
+                // get one's name if tutee is registered
+                if (overlappedTutoring.getTuteeId()!=null && userRepository.findById(overlappedTutoring.getTuteeId()).isPresent()) {
+                    Optional <User> tuteeOptional = userRepository.findById(overlappedTutoring.getTuteeId());
+                    tuteeName = tuteeOptional.get().getName();
+                }
+                String subjectName = overlappedTutoring.getSubject().getName();
+                String errorMessage = tuteeName + " 학생 " + subjectName + " 수업과 겹칩니다. (" + date.toString() + " " + irregular.getStartTime().toString() + "~" + irregular.getEndTime().toString() + ")";
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(errorMessage);
+            }
+        }
+        Irregular newIrregular = Irregular.builder().date(date).startTime(startTime).endTime(endTime)
+                .tutoring(targetTutoring).tutorId(tutorId).build();
+
+        // find original schedule to cancel
+
+        // check if the cancellation is about regular schedule of the tutoring
+        // ... and save new schedule and delete old one.
+        List<Time> timeList = targetTutoring.getTimes();
+        date = LocalDate.parse(replaceScheduleDTO.getDate(), DateTimeFormatter.ISO_DATE);
+        day = date.getDayOfWeek();
+        startTime = LocalTime.parse(replaceScheduleDTO.getStartTime(), DateTimeFormatter.ISO_LOCAL_TIME);
+        for (Time time: timeList) {
+            if (day.equals(time.getDay()) && startTime.equals(time.getStartTime())) {
+                Optional<Cancellation> cancellationOptional = cancellationRepository.findByTutorIdAndCancelledDateTime(tutorId, LocalDateTime.of(date, startTime));
+                if (cancellationOptional.isEmpty()) {
+                    Cancellation newCancellation = Cancellation.builder().cancelledDateTime(LocalDateTime.of(date, startTime)).tutoring(targetTutoring).tutorId(tutorId).build();
+                    // save and cancel
+                    irregularRepository.save(newIrregular);
+                    cancellationRepository.save(newCancellation);
+                    pushService.replaceScheduleNotification(targetTutoring, replaceScheduleDTO);
+                    return ResponseEntity.ok().build();
+                }
+            }
+        }
+        // cancellation about irregular schedule of the tutoring
+        for (Irregular irregular: irregularList) {
+            if (date.isEqual(irregular.getDate()) && startTime.equals(irregular.getStartTime())) {
+                irregularRepository.save(newIrregular);
+                irregularRepository.delete(irregular);
+                pushService.replaceScheduleNotification(targetTutoring, replaceScheduleDTO);
+                return ResponseEntity.ok().build();
+            }
+        }
+
+        // if there is no such schedule.
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NO_SUCH_SCHEDULE.getMsg()));
+    }
+
     public ResponseEntity<?> changeRegularSchedule(ChangeRegularDTO changeRegularDTO) {
         // Check whether the request user actually has this tutoring.
         String tutorIdStr = SecurityContextHolder.getContext().getAuthentication().getName();

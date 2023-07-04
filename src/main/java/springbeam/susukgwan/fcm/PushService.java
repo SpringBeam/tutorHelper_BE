@@ -4,16 +4,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import springbeam.susukgwan.schedule.Time;
+import springbeam.susukgwan.schedule.dto.ReplaceScheduleDTO;
 import springbeam.susukgwan.tutoring.Tutoring;
 import springbeam.susukgwan.user.Role;
 import springbeam.susukgwan.user.User;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -102,11 +101,11 @@ public class PushService {
             }
         }
     }
-    // Notify tutee, parent 3. changed regular schedule
-    public void changeRegularScheduleNotification(Tutoring tutoring, String dayTime) {
-        String title = "정규시간 변경";
-        String topic = "change";
-        String body = tutoring.getSubject().getName() + " 수업의 시간이 " + dayTime + " (으)로 변경되었습니다.";
+    public void replaceScheduleNotification(Tutoring tutoring, ReplaceScheduleDTO replaceScheduleDTO) {
+        String title = "수업시간 변경";
+        String topic = "replace";
+        String body = tutoring.getSubject().getName() + " 수업의" + replaceScheduleDTO.getDate() + " " + replaceScheduleDTO.getStartTime()
+                + " 일정이 " + replaceScheduleDTO.getDateWant() + " " + replaceScheduleDTO.getStartTimeWant() + "(으)로 변경되었습니다.";
         PushRequest pushRequest = PushRequest.builder()
                 .title(title).topic(topic).body(body).build();
         // send to tutee
@@ -129,6 +128,73 @@ public class PushService {
                 pushRepository.save(pushSave);
             }
         }
+    }
+
+    // Notify tutee, parent 3. changed regular schedule
+    public void changeRegularScheduleNotification(Tutoring tutoring, String dayTime) {
+        String title = "정규시간 변경";
+        String topic = "change";
+        String body = tutoring.getSubject().getName() + " 수업의 시간이 " + replaceDay(dayTime) + "(으)로 변경되었습니다.";
+        PushRequest pushRequest = PushRequest.builder()
+                .title(title).topic(topic).body(body).build();
+        // send to tutee
+        if (tutoring.getTuteeId()!=null) {
+            Optional<FCMToken> tuteeTokenOptional = fcmTokenRepository.findByUserId(tutoring.getTuteeId());
+            if (tuteeTokenOptional.isPresent() && tuteeTokenOptional.get().isAlarmOn()) {
+                pushRequest.setToken(tuteeTokenOptional.get().getFcmToken());
+                sendPushNotificationToToken(pushRequest);
+                Push pushSave = Push.builder().title(title).topic(topic).body(body).receiverId(tutoring.getTuteeId()).isRead(false).build();
+                pushRepository.save(pushSave);
+            }
+        }
+        // send to parent
+        if (tutoring.getParentId()!=null) {
+            Optional<FCMToken> parentTokenOptional = fcmTokenRepository.findByUserId(tutoring.getParentId());
+            if (parentTokenOptional.isPresent() && parentTokenOptional.get().isAlarmOn()) {
+                pushRequest.setToken(parentTokenOptional.get().getFcmToken());
+                sendPushNotificationByTopic(pushRequest);
+                Push pushSave = Push.builder().title(title).topic(topic).body(body).receiverId(tutoring.getParentId()).isRead(false).build();
+                pushRepository.save(pushSave);
+            }
+        }
+    }
+    private String replaceDay(String dayTime) {
+        StringBuilder replacedDayTime = new StringBuilder();
+        String[] split = dayTime.split(",");
+        Iterator<String> it = Arrays.stream(split).iterator();
+        while (it.hasNext()) {
+            String eachDayTime = it.next().strip();
+            String day = eachDayTime.split(" ")[0];
+            DayOfWeek dayOfWeek = DayOfWeek.of(Integer.parseInt(day));
+            switch (dayOfWeek.getValue()) {
+                case 1:
+                    eachDayTime.replaceFirst("1", "월");
+                    break;
+                case 2:
+                    eachDayTime.replaceFirst("2", "화");
+                    break;
+                case 3:
+                    eachDayTime.replaceFirst("3", "수");
+                    break;
+                case 4:
+                    eachDayTime.replaceFirst("4", "목");
+                    break;
+                case 5:
+                    eachDayTime.replaceFirst("5", "금");
+                    break;
+                case 6:
+                    eachDayTime.replaceFirst("6", "토");
+                    break;
+                case 7:
+                    eachDayTime.replaceFirst("7", "일");
+                    break;
+            }
+            replacedDayTime.append(eachDayTime);
+            if (it.hasNext()) {
+                replacedDayTime.append(", ");
+            }
+        }
+        return replacedDayTime.toString();
     }
 
     /* Send a push to a specific token */

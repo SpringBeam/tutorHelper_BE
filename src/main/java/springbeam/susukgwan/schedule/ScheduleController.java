@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import springbeam.susukgwan.schedule.dto.ChangeRegularDTO;
 import springbeam.susukgwan.schedule.dto.GetScheduleDTO;
+import springbeam.susukgwan.schedule.dto.ReplaceScheduleDTO;
 import springbeam.susukgwan.schedule.dto.ScheduleDTO;
 
 @Slf4j
@@ -36,5 +37,9 @@ public class ScheduleController {
     @GetMapping("/list/tutorings/{year}/{month}")
     public ResponseEntity getAllScheduleList(@PathVariable("year") int year, @PathVariable("month") int month) {
         return scheduleService.getAllScheduleListYearMonth(year, month);
+    }
+    @PutMapping("")
+    public ResponseEntity replaceSchedule(@RequestBody ReplaceScheduleDTO replaceScheduleDTO) {
+        return scheduleService.replaceSchedule(replaceScheduleDTO);
     }
 }
