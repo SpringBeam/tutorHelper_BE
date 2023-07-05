@@ -21,6 +21,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import springbeam.susukgwan.auth.handler.OAuth2AuthenticationFailureHandler;
 import springbeam.susukgwan.auth.handler.OAuth2AuthenticationSuccessHandler;
 
+import java.util.List;
+
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -45,7 +47,15 @@ public class SecurityConfig {
         http
                 .csrf().disable()
                 .formLogin().disable()
-                .cors()
+                .cors().configurationSource(
+                        request -> {
+                            CorsConfiguration corsConfiguration = new CorsConfiguration();
+                            corsConfiguration.setAllowedOrigins(List.of("http://localhost:19006"));
+                            corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH","OPTIONS"));
+                            corsConfiguration.setAllowedHeaders(List.of("*")); // 확인 필요
+                            return corsConfiguration;
+                        }
+                )
                 // .configurationSource(request -> new CorsConfiguration().applyPermitDefaultValues())
                     .and()
                 .exceptionHandling()
