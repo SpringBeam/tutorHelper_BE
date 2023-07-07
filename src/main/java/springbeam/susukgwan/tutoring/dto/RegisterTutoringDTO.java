@@ -2,6 +2,8 @@ package springbeam.susukgwan.tutoring.dto;
 
 import lombok.*;
 
+import java.util.List;
+
 @Getter
 @Setter
 @Builder
@@ -9,6 +11,6 @@ import lombok.*;
 @NoArgsConstructor
 public class RegisterTutoringDTO {
     private String subject;
-    private String dayTime;
+    private List<DayTimeDTO> dayTimeList;
     private String startDate;
 }

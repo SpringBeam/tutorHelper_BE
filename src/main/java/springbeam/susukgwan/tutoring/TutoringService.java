@@ -24,6 +24,8 @@ import springbeam.susukgwan.schedule.dto.GetScheduleDTO;
 import springbeam.susukgwan.schedule.dto.ScheduleInfoResponseDTO;
 import springbeam.susukgwan.subject.Subject;
 import springbeam.susukgwan.subject.SubjectRepository;
+import springbeam.susukgwan.tutoring.color.Color;
+import springbeam.susukgwan.tutoring.color.ColorList;
 import springbeam.susukgwan.tutoring.dto.*;
 import springbeam.susukgwan.user.Role;
 import springbeam.susukgwan.user.User;
@@ -72,12 +74,15 @@ public class TutoringService {
         Tutoring newTutoring = Tutoring.builder().tutorId(tutorId).startDate(startDate)
                         .subject(subject) // 과목 매핑
                         .build();
-        ResponseEntity response = scheduleService.registerRegularSchedule(newTutoring, registerTutoringDTO.getDayTime());
-        // 일정 등록이 성공할 경우에만 수업을 저장하도록 한다.
+        ResponseEntity<?> response = scheduleService.checkRegularScheduleRegistration(newTutoring, registerTutoringDTO.getDayTimeList());
         if (response.getStatusCode() == HttpStatus.OK) {
+            // 일정 등록이 가능한 경우
             tutoringRepository.save(newTutoring);
+            List<Time> timeListToSave = scheduleService.convertToTimeList(newTutoring, registerTutoringDTO.getDayTimeList());
+            timeRepository.saveAll(timeListToSave);
+            return ResponseEntity.ok().build();
         }
-        return response;
+        else return response;
     }
 
     public ResponseEntity<?> updateTutoring(Long tutoringId, UpdateTutoringDTO updateTutoringDTO) {

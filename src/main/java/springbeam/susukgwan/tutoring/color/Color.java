@@ -6,7 +6,7 @@ import lombok.experimental.SuperBuilder;
 import springbeam.susukgwan.tutoring.Tutoring;
 
 @Entity
-@Table(name = "tutoring")
+@Table(name = "color")
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
