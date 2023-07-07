@@ -18,6 +18,8 @@ public class AssignmentResponseDTO {
     private String amount;
     private Boolean isCompleted;
     private Long noteId;
+    private Long count;
+    private Long goalCount;
 
     public AssignmentResponseDTO (Assignment assignment) {
         this.id = assignment.getId();
@@ -28,5 +30,7 @@ public class AssignmentResponseDTO {
         this.amount = assignment.getAmount();
         this.isCompleted = assignment.getIsCompleted();
         this.noteId = assignment.getNote().getId();
+        this.count = assignment.getCount();
+        this.goalCount = assignment.getGoalCount();
     }
 }
