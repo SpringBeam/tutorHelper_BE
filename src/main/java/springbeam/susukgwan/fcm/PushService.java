@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import springbeam.susukgwan.assignment.Assignment;
 import springbeam.susukgwan.assignment.AssignmentRepository;
+import springbeam.susukgwan.note.Note;
 import springbeam.susukgwan.schedule.dto.ReplaceScheduleDTO;
 import springbeam.susukgwan.tutoring.Tutoring;
 import springbeam.susukgwan.user.Role;
@@ -247,6 +248,38 @@ public class PushService {
                 pushRequest.setToken(tutorTokenOptional.get().getFcmToken());
                 sendPushNotificationByTopic(pushRequest);
                 Push pushSave = Push.builder().title(title).topic(topic).body(body).receiverId(tutorId).isRead(false).build();
+                pushRepository.save(pushSave);
+            }
+        }
+    }
+
+    /* 학부모에게 수업일지 등록알림 보내기 */
+    public void noteCreateNotification (Note note) {
+        String title = "수업일지 등록";
+        String topic = "create";
+        String body = "";
+
+        Long tuteeId = note.getTutoring().getTuteeId();
+        if (tuteeId != null) {
+            Optional<User> tutee = userRepository.findById(tuteeId);
+            if (tutee.isPresent()) {
+                body = "'" + tutee.get().getName() + "' 학생의 '" + note.getTutoring().getSubject().getName() + "' 수업일지가 등록되었습니다.";
+            }
+        }
+
+        log.info(body);
+
+        PushRequest pushRequest = PushRequest.builder()
+                .title(title).topic(topic).body(body).build();
+
+        // send to parent
+        Long parentId = note.getTutoring().getParentId();
+        if (parentId != null) {
+            Optional<FCMToken> parentTokenOptional = fcmTokenRepository.findByUserId(parentId);
+            if (parentTokenOptional.isPresent() && parentTokenOptional.get().isAlarmOn()) {
+                pushRequest.setToken(parentTokenOptional.get().getFcmToken());
+                sendPushNotificationByTopic(pushRequest);
+                Push pushSave = Push.builder().title(title).topic(topic).body(body).receiverId(parentId).isRead(false).build();
                 pushRepository.save(pushSave);
             }
         }
