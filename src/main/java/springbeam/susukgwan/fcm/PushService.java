@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import springbeam.susukgwan.assignment.Assignment;
 import springbeam.susukgwan.assignment.AssignmentRepository;
+import springbeam.susukgwan.note.Note;
 import springbeam.susukgwan.schedule.dto.ReplaceScheduleDTO;
 import springbeam.susukgwan.tutoring.Tutoring;
 import springbeam.susukgwan.user.Role;
@@ -215,6 +216,70 @@ public class PushService {
                 pushRequest.setToken(tuteeTokenOptional.get().getFcmToken());
                 sendPushNotificationByTopic(pushRequest);
                 Push pushSave = Push.builder().title(title).topic(topic).body(body).receiverId(tuteeId).isRead(false).build();
+                pushRepository.save(pushSave);
+            }
+        }
+    }
+
+    /* 선생님한테 숙제 미완료 알림 보내기 */
+    public void assignmentCompletedNotification (Assignment assignment) {
+        String title = "숙제 미완료";
+        String topic = "completed";
+        String body = "";
+
+        Long tuteeId = assignment.getNote().getTutoring().getTuteeId();
+        if (tuteeId != null) {
+            Optional<User> tutee = userRepository.findById(tuteeId);
+            if (tutee.isPresent()) {
+                body = "'" + tutee.get().getName() + "' 학생이 '" + assignment.getNote().getTutoring().getSubject().getName() + "' 수업의 '" + assignment.getBody() + "' 숙제를 완료하지 않았습니다.";
+            }
+        }
+
+        log.info(body);
+
+        PushRequest pushRequest = PushRequest.builder()
+                .title(title).topic(topic).body(body).build();
+
+        // send to tutor
+        Long tutorId = assignmentRepository.GetTutorIdOfAssignment(assignment.getId());
+        if (tutorId != null) {
+            Optional<FCMToken> tutorTokenOptional = fcmTokenRepository.findByUserId(tutorId);
+            if (tutorTokenOptional.isPresent() && tutorTokenOptional.get().isAlarmOn()) {
+                pushRequest.setToken(tutorTokenOptional.get().getFcmToken());
+                sendPushNotificationByTopic(pushRequest);
+                Push pushSave = Push.builder().title(title).topic(topic).body(body).receiverId(tutorId).isRead(false).build();
+                pushRepository.save(pushSave);
+            }
+        }
+    }
+
+    /* 학부모에게 수업일지 등록알림 보내기 */
+    public void noteCreateNotification (Note note) {
+        String title = "수업일지 등록";
+        String topic = "create";
+        String body = "";
+
+        Long tuteeId = note.getTutoring().getTuteeId();
+        if (tuteeId != null) {
+            Optional<User> tutee = userRepository.findById(tuteeId);
+            if (tutee.isPresent()) {
+                body = "'" + tutee.get().getName() + "' 학생의 '" + note.getTutoring().getSubject().getName() + "' 수업일지가 등록되었습니다.";
+            }
+        }
+
+        log.info(body);
+
+        PushRequest pushRequest = PushRequest.builder()
+                .title(title).topic(topic).body(body).build();
+
+        // send to parent
+        Long parentId = note.getTutoring().getParentId();
+        if (parentId != null) {
+            Optional<FCMToken> parentTokenOptional = fcmTokenRepository.findByUserId(parentId);
+            if (parentTokenOptional.isPresent() && parentTokenOptional.get().isAlarmOn()) {
+                pushRequest.setToken(parentTokenOptional.get().getFcmToken());
+                sendPushNotificationByTopic(pushRequest);
+                Push pushSave = Push.builder().title(title).topic(topic).body(body).receiverId(parentId).isRead(false).build();
                 pushRepository.save(pushSave);
             }
         }

@@ -11,6 +11,7 @@ import springbeam.susukgwan.ResponseMsgList;
 import springbeam.susukgwan.S3Service;
 import springbeam.susukgwan.assignment.*;
 import springbeam.susukgwan.assignment.dto.AssignmentRequestDTO;
+import springbeam.susukgwan.fcm.PushService;
 import springbeam.susukgwan.note.dto.NoteRequestDTO;
 import springbeam.susukgwan.note.dto.NoteResponseDTO;
 import springbeam.susukgwan.review.Review;
@@ -43,6 +44,7 @@ public class NoteService {
     private final AssignmentRepository assignmentRepository;
     private final SubmitRepository submitRepository;
     private final S3Service s3Service;
+    private final PushService pushService;
 
     /* 수업일지 추가 */
     public ResponseEntity<?> createNote (NoteRequestDTO.Create createNote) {
@@ -244,6 +246,7 @@ public class NoteService {
             assignmentRepository.saveAllAndFlush(createAssignmentList); // 한번에 생성
         }
 
+        pushService.noteCreateNotification(note);
         return ResponseEntity.ok().build();
     }
 
