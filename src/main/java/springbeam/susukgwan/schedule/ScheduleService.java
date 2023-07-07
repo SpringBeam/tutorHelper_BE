@@ -41,6 +41,8 @@ public class ScheduleService {
     @Autowired
     private TimeRepository timeRepository;
     @Autowired
+    private RegularRecordRepository regularRecordRepository;
+    @Autowired
     private NoteService noteService;
     @Autowired
     private PushService pushService;
@@ -73,7 +75,7 @@ public class ScheduleService {
                     tuteeName = tuteeOptional.get().getName();
                 }
                 String subjectName = tutoring.getSubject().getName();
-                String errorMessage = tuteeName + " 학생 " + subjectName + " 수업과 겹칩니다. (" + time.getStartTime().toString() + "~" + time.getEndTime().toString() + ")";
+                String errorMessage = tuteeName + " 학생 " + subjectName + " 수업과 겹칩니다. ("+ parseDayToString(time.getDay()) + "요일 "  + time.getStartTime().toString() + "~" + time.getEndTime().toString() + ")";
                 return ResponseEntity.status(HttpStatus.CONFLICT).body(new ResponseMsg(errorMessage));
             }
         }
@@ -100,7 +102,12 @@ public class ScheduleService {
         Irregular newIrregular = Irregular.builder().date(date).startTime(startTime).endTime(endTime)
                 .tutoring(targetTutoring).tutorId(tutorId).build();
         irregularRepository.save(newIrregular);
-        pushService.newIrregularScheduleNotification(targetTutoring, date, startTime, endTime);
+        // 미래의 일일 때만 학생에게 알려야 함. 임의로 선생이 바꾸는 것을 모두 알리는 것은 문제가 있음.
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startDateTime = LocalDateTime.of(date, startTime);
+        if (startDateTime.isAfter(now)) {
+            pushService.newIrregularScheduleNotification(targetTutoring, date, startTime, endTime);
+        }
         return ResponseEntity.ok().build();
     }
 
@@ -119,13 +126,32 @@ public class ScheduleService {
         LocalDate date = LocalDate.parse(scheduleDTO.getDate(), DateTimeFormatter.ISO_DATE);
         DayOfWeek day = date.getDayOfWeek();
         LocalTime startTime = LocalTime.parse(scheduleDTO.getStartTime(), DateTimeFormatter.ISO_LOCAL_TIME);
+        // 과거의 일정에 대한 취소 요청이면 과거정규기록이 적용되는 시간대일 수 있음. -> 존재하면 적용
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startDateTime = LocalDateTime.of(date, startTime);
+        if (startDateTime.isBefore(now)) {
+            // 과거의 일정일 경우 현재정규시간, 과거정규기록 중 어느 것이 적용되는 시간대인지 확인
+            // 적용시간대가 오래된 것이 앞에 오도록 정렬됨. ~OrderBy~Asc
+            List<RegularRecord> regularRecords = regularRecordRepository.findAllByTutoringOrderByAppliedUntilAsc(targetTutoring);
+            // 과거 마지막 정규기록 ~ 현재 정규시간인 경우 혹은 정규기록이 없는 경우에는 현재 정규시간이 적용됨.
+            for (RegularRecord regularRecord: regularRecords) {
+                if (regularRecord.getAppliedUntil().isAfter(startDateTime)) {
+                    // 이 정규시기가 적용되던 기간에 시작한 경우이므로, 이 처음 매칭되는 정규타임을 적용해야 함.
+                    timeList = parseDayTimeString(regularRecord.getDayTimeString(), targetTutoring);
+                    break;
+                }
+            }
+        }
         for (Time time: timeList) {
             if (day.equals(time.getDay()) && startTime.equals(time.getStartTime())) {
                 Optional<Cancellation> cancellationOptional = cancellationRepository.findByTutorIdAndCancelledDateTime(tutorId, LocalDateTime.of(date, startTime));
                 if (cancellationOptional.isEmpty()) {
                     Cancellation newCancellation = Cancellation.builder().cancelledDateTime(LocalDateTime.of(date, startTime)).tutoring(targetTutoring).tutorId(tutorId).build();
                     cancellationRepository.save(newCancellation);
-                    pushService.cancelScheduleNotification(targetTutoring, date, startTime);
+                    // 미래 일정이 취소된 경우만 알림을 보냄.
+                    if (startDateTime.isAfter(now)) {
+                        pushService.cancelScheduleNotification(targetTutoring, date, startTime);
+                    }
                     return ResponseEntity.ok().build();
                 }
             }
@@ -136,7 +162,10 @@ public class ScheduleService {
         for (Irregular irregular: irregularList) {
             if (date.isEqual(irregular.getDate()) && startTime.equals(irregular.getStartTime())) {
                 irregularRepository.delete(irregular);
-                pushService.cancelScheduleNotification(targetTutoring, date, startTime);
+                // 미래 일정이 취소된 경우만 알림을 보냄.
+                if (startDateTime.isAfter(now)) {
+                    pushService.cancelScheduleNotification(targetTutoring, date, startTime);
+                }
                 return ResponseEntity.ok().build();
             }
         }
@@ -165,13 +194,13 @@ public class ScheduleService {
 
         // compare wanted day, startTime, endTime with regular schedule to check if it is preoccupied or not.
         List<Tutoring> tutoringList = tutoringRepository.findAllByTutorId(tutorId);
-        LocalDate date = LocalDate.parse(replaceScheduleDTO.getDateWant(), DateTimeFormatter.ISO_DATE);
-        DayOfWeek day = date.getDayOfWeek();
-        LocalTime startTime = LocalTime.parse(replaceScheduleDTO.getStartTimeWant(), DateTimeFormatter.ISO_LOCAL_TIME);
-        LocalTime endTime = LocalTime.parse(replaceScheduleDTO.getEndTimeWant(), DateTimeFormatter.ISO_LOCAL_TIME);
+        LocalDate dateWant = LocalDate.parse(replaceScheduleDTO.getDateWant(), DateTimeFormatter.ISO_DATE);
+        DayOfWeek dayWant = dateWant.getDayOfWeek();
+        LocalTime startTimeWant = LocalTime.parse(replaceScheduleDTO.getStartTimeWant(), DateTimeFormatter.ISO_LOCAL_TIME);
+        LocalTime endTimeWant = LocalTime.parse(replaceScheduleDTO.getEndTimeWant(), DateTimeFormatter.ISO_LOCAL_TIME);
         for (Tutoring tutoring: tutoringList) {
             // if the dateTime is preoccupied by a certain regular time, return that time.
-            Time time = isPreoccupiedDateTime(tutoring, date, day, startTime, endTime);
+            Time time = isPreoccupiedDateTime(tutoring, dateWant, dayWant, startTimeWant, endTimeWant);
             if (time != null) {
                 String tuteeName = "";
                 // get one's name if tutee is registered
@@ -180,15 +209,15 @@ public class ScheduleService {
                     tuteeName = tuteeOptional.get().getName();
                 }
                 String subjectName = tutoring.getSubject().getName();
-                String errorMessage = tuteeName + " 학생 " + subjectName + " 수업과 겹칩니다. (" + time.getStartTime().toString() + "~" + time.getEndTime().toString() + ")";
+                String errorMessage = tuteeName + " 학생 " + subjectName + " 수업과 겹칩니다. ("+ parseDayToString(time.getDay()) + "요일 "  + time.getStartTime().toString() + "~" + time.getEndTime().toString() + ")";
                 return ResponseEntity.status(HttpStatus.CONFLICT).body(new ResponseMsg(errorMessage));
             }
         }
         // check all irregular times
         List<Irregular> irregularList = irregularRepository.findAllByTutorId(tutorId);
         for (Irregular irregular: irregularList) {
-            if (date.isEqual(irregular.getDate()) &&
-                    isOverlapped(startTime, endTime, irregular.getStartTime(), irregular.getEndTime()))
+            if (dateWant.isEqual(irregular.getDate()) &&
+                    isOverlapped(startTimeWant, endTimeWant, irregular.getStartTime(), irregular.getEndTime()))
             {
                 String tuteeName = "";
                 Tutoring overlappedTutoring = irregular.getTutoring(); // tutoring 존재 x의 경우는 일단 무시 tutoring 삭제 시 정규취소, irregular 취소 모두 삭제되도록 해야 됨.
@@ -198,40 +227,62 @@ public class ScheduleService {
                     tuteeName = tuteeOptional.get().getName();
                 }
                 String subjectName = overlappedTutoring.getSubject().getName();
-                String errorMessage = tuteeName + " 학생 " + subjectName + " 수업과 겹칩니다. (" + date.toString() + " " + irregular.getStartTime().toString() + "~" + irregular.getEndTime().toString() + ")";
+                String errorMessage = tuteeName + " 학생 " + subjectName + " 수업과 겹칩니다. (" + dateWant.toString() + " " + irregular.getStartTime().toString() + "~" + irregular.getEndTime().toString() + ")";
                 return ResponseEntity.status(HttpStatus.CONFLICT).body(errorMessage);
             }
         }
-        Irregular newIrregular = Irregular.builder().date(date).startTime(startTime).endTime(endTime)
+        Irregular newIrregular = Irregular.builder().date(dateWant).startTime(startTimeWant).endTime(endTimeWant)
                 .tutoring(targetTutoring).tutorId(tutorId).build();
 
         // find original schedule to cancel
 
+        // 변경대상 날짜(date, startTime, ... 위의 dateWant 등과는 다름)가 정규시간인지 아닌지 확인하는 것
         // check if the cancellation is about regular schedule of the tutoring
-        // ... and save new schedule and delete old one.
+        // ... and if it is, save new schedule and delete old one.
         List<Time> timeList = targetTutoring.getTimes();
-        date = LocalDate.parse(replaceScheduleDTO.getDate(), DateTimeFormatter.ISO_DATE);
-        day = date.getDayOfWeek();
-        startTime = LocalTime.parse(replaceScheduleDTO.getStartTime(), DateTimeFormatter.ISO_LOCAL_TIME);
+        LocalDate date = LocalDate.parse(replaceScheduleDTO.getDate(), DateTimeFormatter.ISO_DATE);
+        DayOfWeek day = date.getDayOfWeek();
+        LocalTime startTime = LocalTime.parse(replaceScheduleDTO.getStartTime(), DateTimeFormatter.ISO_LOCAL_TIME);
+        // 과거의 일정에 대한 취소 요청이면 과거정규기록이 적용되는 시간대일 수 있음. -> 존재하면 적용
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startDateTime = LocalDateTime.of(date, startTime);
+        // 알람 여부를 위한 flag 과거 -> 과거로 변경된 일정만 알림을 제외할 필요 있음.
+        LocalDateTime startDateTimeWant = LocalDateTime.of(dateWant, startTimeWant);
+        boolean noPushFlag = (startDateTime.isBefore(now) && startDateTimeWant.isBefore(now));
+        if (startDateTime.isBefore(now)) {
+            // 과거의 일정일 경우 현재정규시간, 과거정규기록 중 어느 것이 적용되는 시간대인지 확인
+            // 적용시간대가 오래된 것이 앞에 오도록 정렬됨. ~OrderBy~Asc
+            List<RegularRecord> regularRecords = regularRecordRepository.findAllByTutoringOrderByAppliedUntilAsc(targetTutoring);
+            // 과거 마지막 정규기록 ~ 현재 정규시간인 경우 혹은 정규기록이 없는 경우에는 현재 정규시간이 적용됨.
+            for (RegularRecord regularRecord: regularRecords) {
+                if (regularRecord.getAppliedUntil().isAfter(startDateTime)) {
+                    // 이 정규시기가 적용되던 기간에 시작한 경우이므로, 이 처음 매칭되는 정규타임을 적용해야 함.
+                    timeList = parseDayTimeString(regularRecord.getDayTimeString(), targetTutoring);
+                    break;
+                }
+            }
+        }
         for (Time time: timeList) {
             if (day.equals(time.getDay()) && startTime.equals(time.getStartTime())) {
                 Optional<Cancellation> cancellationOptional = cancellationRepository.findByTutorIdAndCancelledDateTime(tutorId, LocalDateTime.of(date, startTime));
                 if (cancellationOptional.isEmpty()) {
                     Cancellation newCancellation = Cancellation.builder().cancelledDateTime(LocalDateTime.of(date, startTime)).tutoring(targetTutoring).tutorId(tutorId).build();
-                    // save and cancel
+                    // now save irregular schedule and cancel original schedule
                     irregularRepository.save(newIrregular);
                     cancellationRepository.save(newCancellation);
-                    pushService.replaceScheduleNotification(targetTutoring, replaceScheduleDTO);
+                    if (!noPushFlag) pushService.replaceScheduleNotification(targetTutoring, replaceScheduleDTO);
                     return ResponseEntity.ok().build();
                 }
             }
         }
+
         // cancellation about irregular schedule of the tutoring
         for (Irregular irregular: irregularList) {
             if (date.isEqual(irregular.getDate()) && startTime.equals(irregular.getStartTime())) {
+                // now save irregular schedule and delete original irregular schedule
                 irregularRepository.save(newIrregular);
                 irregularRepository.delete(irregular);
-                pushService.replaceScheduleNotification(targetTutoring, replaceScheduleDTO);
+                if (!noPushFlag) pushService.replaceScheduleNotification(targetTutoring, replaceScheduleDTO);
                 return ResponseEntity.ok().build();
             }
         }
@@ -240,6 +291,7 @@ public class ScheduleService {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NO_SUCH_SCHEDULE.getMsg()));
     }
 
+    /* 새 정규시간이 지금 이후로 다른 일정과 겹치지 않으면 변경. 다른 수업의 정규시간과 겹치는지 비교, 현재시간 이후의 모든 비정기일정과 겹치는지 비교 */
     public ResponseEntity<?> changeRegularSchedule(ChangeRegularDTO changeRegularDTO) {
         // Check whether the request user actually has this tutoring.
         String tutorIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -266,7 +318,7 @@ public class ScheduleService {
                     }
                     String subjectName = tutoring.getSubject().getName();
                     // 아래 요일 정보 보내주기 고민
-                    String errorMessage = tuteeName + " 학생 " + subjectName + " 수업과 겹칩니다. (" + time.getStartTime().toString() + "~" + time.getEndTime().toString() + ")";
+                    String errorMessage = tuteeName + " 학생 " + subjectName + " 수업과 겹칩니다. (" + parseDayToString(time.getDay()) + "요일 " + time.getStartTime().toString() + "~" + time.getEndTime().toString() + ")";
                     return ResponseEntity.status(HttpStatus.CONFLICT).body(new ResponseMsg(errorMessage));
                 }
             }
@@ -294,10 +346,16 @@ public class ScheduleService {
             }
         }
 
-        // delete all unnecessary cancellations of the tutoring (except cancellation of the same time)
+        // delete all unnecessary cancellations of the tutoring
+        // 해당 수업의 미래(현재 시간 이후) 정규수업시간 중 취소가 등록되어 있었으면
+        // 암묵적으로 필요없는 것으로 분류하고 미래취소 모두 삭제 후 일정을 일관적으로 나타내도록 함
         List<Cancellation> cancellationList = cancellationRepository.findAllByTutoring(targetTutoring);
         for (Cancellation cancellation: cancellationList) {
             LocalDateTime cancelledDateTime = cancellation.getCancelledDateTime();
+            if (cancelledDateTime.isAfter(now)) {
+                cancellationRepository.delete(cancellation);
+            }
+            /*
             for (Time time: timeList) {
                 if (cancelledDateTime.getDayOfWeek().equals(time.getDay()) &&
                     LocalTime.of(cancelledDateTime.getHour(), cancelledDateTime.getMinute()).equals(time.getStartTime())) {
@@ -305,7 +363,18 @@ public class ScheduleService {
                 }
                 cancellationRepository.delete(cancellation);
             }
+             */
         }
+        // 지금까지의 정규시간 기록
+        List<Time> previousTimeList = targetTutoring.getTimes();
+        String previousDayTimeStr = makeDayTimeString(previousTimeList);
+        RegularRecord regularRecord = RegularRecord.builder()
+                .tutoring(targetTutoring)
+                .dayTimeString(previousDayTimeStr)
+                .appliedUntil(now)
+                .build();
+        regularRecordRepository.save(regularRecord);
+
         timeRepository.deleteByTutoringId(targetTutoring.getId());
         timeRepository.saveAllAndFlush(timeList);
         pushService.changeRegularScheduleNotification(targetTutoring, changeRegularDTO.getDayTime());
@@ -325,6 +394,7 @@ public class ScheduleService {
           */
     }
 
+    /* 새로운 수업이 지금 이후로 다른 일정과 겹치지 않으면 등록. 다른 수업의 정규시간과 겹치는지 비교, 현재시간 이후의 모든 비정기일정과 겹치는지 비교 */
     public ResponseEntity<?> registerRegularSchedule(Tutoring targetTutoring, String dayTime) {
         // called by registerTutoring
         // compare day, startTime, endTime of new regular schedule with the other regular schedules
@@ -342,8 +412,7 @@ public class ScheduleService {
                         tuteeName = userRepository.findById(tutoring.getTuteeId()).get().getName();
                     }
                     String subjectName = tutoring.getSubject().getName();
-                    // 아래 요일 정보 보내주기 고민
-                    String errorMessage = tuteeName + " 학생 " + subjectName + " 수업과 겹칩니다. (" + time.getStartTime().toString() + "~" + time.getEndTime().toString() + ")";
+                    String errorMessage = tuteeName + " 학생 " + subjectName + " 수업과 겹칩니다. (" + parseDayToString(time.getDay()) + "요일 "  + time.getStartTime().toString() + "~" + time.getEndTime().toString() + ")";
                     return ResponseEntity.status(HttpStatus.CONFLICT).body(new ResponseMsg(errorMessage));
                 }
             }
@@ -394,7 +463,6 @@ public class ScheduleService {
 
         // times of the tutoring, scheduleList for the response, cancellations of the month, irregular list of the month
         List<Time> timeList = tutoring.getTimes();
-        List<ScheduleInfoResponseDTO> scheduleList = new ArrayList<>();
         List<Cancellation> cancelledList = cancellationRepository.findAllByTutoring(tutoring).stream().filter(c ->
                 (c.getCancelledDateTime().getYear() == targetDate.getYear() &&
                         c.getCancelledDateTime().getMonth() == targetDate.getMonth())
@@ -403,25 +471,10 @@ public class ScheduleService {
                         (i.getDate().getYear() == targetDate.getYear() &&
                                 i.getDate().getMonth() == targetDate.getMonth())
         ).toList();
+        List<ScheduleInfoResponseDTO> scheduleInfoResponseDTOList = getRegularScheduleListByYearMonth(tutoring, targetDate);
+        // 이하 반환용 스케줄 리스트
+        List<ScheduleInfoResponseDTO> scheduleList = new ArrayList<>(scheduleInfoResponseDTOList);
 
-        // get regular schedules of the month (At first, compare targetDate with startDate)
-        if (targetDate.isAfter(tutoring.getStartDate().minusMonths(1))) {
-            for (int i=0; i<targetDate.lengthOfMonth(); i++) {
-                if (targetDate.plusDays(i).isBefore(tutoring.getStartDate())) {
-                    continue;
-                }
-                DayOfWeek day = targetDate.getDayOfWeek().plus(i);
-                for (Time time: timeList) {
-                    if (time.getDay().equals(day)) {
-                        scheduleList.add(ScheduleInfoResponseDTO.builder()
-                                .date(Integer.toString(i+1))
-                                .startTime(time.getStartTime().toString())
-                                .endTime(time.getEndTime().toString())
-                                .build());
-                    }
-                }
-            }
-        }
 
         // get rid of cancelled schedules
         for (Cancellation c: cancelledList) {
@@ -521,8 +574,8 @@ public class ScheduleService {
             allScheduleInfoResponseDTO.setSubject(tutoring.getSubject().getName());
             // set scheduleList for this tutoring
             // times of the tutoring, scheduleList for the response, cancellations of the month, irregular list of the month
-            List<Time> timeList = tutoring.getTimes();
-            List<ScheduleInfoResponseDTO> scheduleList = new ArrayList<>();
+
+
             List<Cancellation> cancelledList = cancellationRepository.findAllByTutoring(tutoring).stream().filter(c ->
                     (c.getCancelledDateTime().getYear() == targetDate.getYear() &&
                             c.getCancelledDateTime().getMonth() == targetDate.getMonth())
@@ -532,24 +585,10 @@ public class ScheduleService {
                             i.getDate().getMonth() == targetDate.getMonth())
             ).toList();
 
-            // get regular schedules of the month (At first, compare targetDate with startDate)
-            if (targetDate.isAfter(tutoring.getStartDate().minusMonths(1))) {
-                for (int i=0; i<targetDate.lengthOfMonth(); i++) {
-                    if (targetDate.plusDays(i).isBefore(tutoring.getStartDate())) {
-                        continue;
-                    }
-                    DayOfWeek day = targetDate.getDayOfWeek().plus(i);
-                    for (Time time: timeList) {
-                        if (time.getDay().equals(day)) {
-                            scheduleList.add(ScheduleInfoResponseDTO.builder()
-                                    .date(Integer.toString(i+1))
-                                    .startTime(time.getStartTime().toString())
-                                    .endTime(time.getEndTime().toString())
-                                    .build());
-                        }
-                    }
-                }
-            }
+            // get regular schedules of the month
+            List<ScheduleInfoResponseDTO> scheduleInfoResponseDTOList = getRegularScheduleListByYearMonth(tutoring, targetDate);
+            // 이하 반환용 스케줄 리스트
+            List<ScheduleInfoResponseDTO> scheduleList = new ArrayList<>(scheduleInfoResponseDTOList);
 
             // get rid of cancelled schedules
             for (Cancellation c: cancelledList) {
@@ -563,7 +602,7 @@ public class ScheduleService {
                 }
             }
 
-            // add irregular schedules
+            // add irregular schedules of the month
             for (Irregular i: irregularList) {
                 scheduleList.add(
                         ScheduleInfoResponseDTO.builder()
@@ -589,18 +628,192 @@ public class ScheduleService {
         return ResponseEntity.ok(allScheduleInfoResponseDTOList);
     }
 
-    private Time isPreoccupiedDateTime(Tutoring tutoring, LocalDate date, DayOfWeek day, LocalTime startTime, LocalTime endTime) {
-        List<Time> timeList = tutoring.getTimes();
-        for (Time time: timeList) {
-            if (day.equals(time.getDay()) &&
-                    isOverlapped(startTime, endTime, time.getStartTime(), time.getEndTime()) &&
-                    cancellationRepository.findAllByCancelledDateTime(LocalDateTime.of(date, time.getStartTime())).isEmpty())
-            { // 정규시간과 요일 및 시간이 겹치고, 그 날에 정규수업 취소가 되어있지 않은 경우에 겹치는 시간 반환.
-                return time;
+    public List<ScheduleInfoResponseDTO> getOnlyScheduleListYearMonth(Tutoring tutoring, int year, int month) {
+        // get LocalDateTime object of the corresponding year and month
+        LocalDate targetDate = LocalDate.of(year, month, 1);
+
+        // scheduleList for the response, cancellations of the month, irregular list of the month
+        List<Cancellation> cancelledList = cancellationRepository.findAllByTutoring(tutoring).stream().filter(c ->
+                (c.getCancelledDateTime().getYear() == targetDate.getYear() &&
+                        c.getCancelledDateTime().getMonth() == targetDate.getMonth())
+        ).toList();
+        List<Irregular> irregularList = irregularRepository.findAllByTutoring(tutoring).stream().filter(i ->
+                (i.getDate().getYear() == targetDate.getYear() &&
+                        i.getDate().getMonth() == targetDate.getMonth())
+        ).toList();
+
+        List<ScheduleInfoResponseDTO> scheduleInfoResponseDTOList = getRegularScheduleListByYearMonth(tutoring, targetDate);
+        // 이하 반환용 스케줄 리스트
+        List<ScheduleInfoResponseDTO> scheduleList = new ArrayList<>(scheduleInfoResponseDTOList);
+
+        // get rid of cancelled schedules
+        for (Cancellation c: cancelledList) {
+            Iterator <ScheduleInfoResponseDTO> it = scheduleList.iterator();
+            while(it.hasNext()) {
+                ScheduleInfoResponseDTO s = it.next();
+                if (c.getCancelledDateTime().getDayOfMonth() == Integer.parseInt(s.getDate()) &&
+                        c.getCancelledDateTime().toLocalTime().toString().equals(s.getStartTime())) {
+                    it.remove();
+                }
             }
         }
+
+        // add irregular schedules
+        for (Irregular i: irregularList) {
+            scheduleList.add(
+                    ScheduleInfoResponseDTO.builder()
+                            .date(Integer.toString(i.getDate().getDayOfMonth()))
+                            .startTime(i.getStartTime().toString())
+                            .endTime(i.getEndTime().toString())
+                            .build()
+            );
+        }
+        return scheduleList;
+        /* 받은 연월에 대한 DateTime 객체를 만들고, 해당 달의 모든 일정을 넣는 것.
+           정규취소를 제외한 모든 정규일정을 추가하고,
+           비정규일정을 모두 넣어준다.
+         */
+        /*
+            a code below can cause unexpected behavior
+            for (ScheduleInfoResponseDTO s : scheduleList) {
+                if ( c.getCancelledDateTime().getDayOfMonth() == Integer.parseInt(s.getDate()) &&
+                        c.getCancelledDateTime().toLocalTime().toString().equals(s.getStartTime())) {
+                    scheduleList.remove(s);
+                }
+            }
+         */
+    }
+
+    /* 정규일정 기록들, 현재 정규일정을 이용해서 그 달의 정규일정을 보내줌. */
+    public List<ScheduleInfoResponseDTO> getRegularScheduleListByYearMonth(Tutoring tutoring, LocalDate targetDate) {
+        // get regular schedules of the month (At first, compare targetDate with startDate)
+        // 시작일이 적어도 현재 조회하는 월에 있거나 그 이전달이어야 함.
+        List<ScheduleInfoResponseDTO> scheduleList = new ArrayList<>();
+        if (targetDate.isAfter(tutoring.getStartDate().minusMonths(1))) {
+            // 조회 시작을 원하는 날짜(~/1, targetDate) 0시 0분보다 현재 시간(now)이 미래에 있을때 이전(과거) 정규시간 조회가 필요해짐.
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime targetDateTime = LocalDateTime.of(targetDate, LocalTime.of(0,0));
+            // 마지막으로 체크한 일수와 시간을 기록하는 변수 둘.
+            int i = 0;
+            LocalDateTime lastRegularAppliedDateTime = targetDateTime;
+            // 정규시간 모두 조회해서 넣기 (지금이 조회하는 달보다 미래인 경우에만 이러한 조회가 필요)
+            if (now.isAfter(targetDateTime)) {
+                // 정규기록 모두 조회
+                List<RegularRecord> regularRecords = regularRecordRepository.findAllByTutoringOrderByAppliedUntilAsc(tutoring)
+                        .stream()
+                        .filter(r -> (r.getAppliedUntil().isAfter(targetDateTime)))
+                        .toList();
+                if (!regularRecords.isEmpty()) {
+                    Iterator<RegularRecord> it = regularRecords.iterator();
+                    while (true) {
+                        RegularRecord regularRecord = it.next(); // 꺼내놓고
+                        lastRegularAppliedDateTime = regularRecord.getAppliedUntil();   // 마지막 적용일자 저장.
+                        // 일자에 대해 순회하면서 확인
+                        for (; i<targetDate.lengthOfMonth(); i++) {
+                            if (targetDate.plusDays(i).isBefore(tutoring.getStartDate())) {
+                                continue;
+                            }
+                            // 해당날쩌의 0시 00분이 정규 적용시기보다 이전이어야 함. 아니면 다음 정규 확인
+                            if (!targetDateTime.plusDays(i).isBefore(regularRecord.getAppliedUntil())) {
+                                break;
+                            }
+                            // 정규기록의 정규일정과 요일이 같고 시작시간 또한 적용시기보다 이전이면 담기
+                            List<Time> regularRecordTimeList = parseDayTimeString(regularRecord.getDayTimeString(), tutoring);
+                            DayOfWeek day = targetDate.getDayOfWeek().plus(i);
+                            for (Time time: regularRecordTimeList) {
+                                if (time.getDay().equals(day)) {
+                                    // 정규 일시
+                                    // LocalDateTime appliedUntil = regularRecord.getAppliedUntil();
+                                    // LocalDateTime registerCandidate = LocalDateTime.of(targetDate.plusDays(i), time.getStartTime());
+                                    LocalTime appliedUntil = regularRecord.getAppliedUntil().toLocalTime();
+                                    if (time.getStartTime().isBefore(appliedUntil)) {
+                                        scheduleList.add(ScheduleInfoResponseDTO.builder()
+                                                .date(Integer.toString(i+1))
+                                                .startTime(time.getStartTime().toString())
+                                                .endTime(time.getEndTime().toString())
+                                                .build());
+                                    }
+                                }
+                            }
+                        }
+                        // 이번 정규기록 확인 끝, 마지막 확인 일자는 i-1일 이고 마지막 일시도 저장되었음.
+                        // 한 날에 여러 개의 정규기록이 존재할 수 있고, 현 정규일정 확인에 들어가기 전에도 i-1부터 확인해야 한다.
+                        i = i-1;
+                        // 모든 정규일자를 확인했으면 끝내기
+                        if (!it.hasNext()) {
+                            break;
+                        }
+                    }
+                }
+            }
+            List<Time> timeList = tutoring.getTimes();
+            // i-1부터 확인을 시작해서 모두 확인하되,
+            // 마지막 적용시간(해당 월 1일 00시 00분 혹은 해당 월 마지막 정규기록)보다 이후 수업일정인 경우만 추가해준다.
+            for (; i<targetDate.lengthOfMonth(); i++) {
+                if (targetDate.plusDays(i).isBefore(tutoring.getStartDate())) {
+                    continue;
+                }
+                DayOfWeek day = targetDate.getDayOfWeek().plus(i);
+                for (Time time: timeList) {
+                    if (time.getDay().equals(day)) {
+                        // 요일이 같고 날짜 및 시간이 현재 정규 적용시기에 맞아야 된다.
+                        if (LocalDateTime.of(targetDate.plusDays(i), time.getStartTime()).isAfter(lastRegularAppliedDateTime)) {
+                            scheduleList.add(ScheduleInfoResponseDTO.builder()
+                                    .date(Integer.toString(i+1))
+                                    .startTime(time.getStartTime().toString())
+                                    .endTime(time.getEndTime().toString())
+                                    .build());
+                        }
+                    }
+                }
+            }
+        }
+        return scheduleList;
+    }
+
+    /* 비정규일정의 등록, 일정 변경에 사용됨. */
+    private Time isPreoccupiedDateTime(Tutoring tutoring, LocalDate date, DayOfWeek day, LocalTime startTime, LocalTime endTime) {
+        // 확인하려는 것이 미래에 시작하는 일정일 경우 수업의 현재 정규시간을 확인하면 됨.
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startDateTime = LocalDateTime.of(date, startTime);
+        List<Time> timeList = tutoring.getTimes(); // 수업 정규시간
+        if (startDateTime.isAfter(now)) {
+            for (Time time: timeList) {
+                if (day.equals(time.getDay()) &&
+                        isOverlapped(startTime, endTime, time.getStartTime(), time.getEndTime()) &&
+                        cancellationRepository.findAllByCancelledDateTime(LocalDateTime.of(date, time.getStartTime())).isEmpty())
+                { // 정규시간과 요일 및 시간이 겹치고, 그 날에 정규수업 취소가 되어있지 않은 경우에 겹치는 시간 반환.
+                    return time;
+                }
+            }
+        }
+        else {
+            // 과거의 일정일 경우 현재정규시간, 과거정규기록 중 어느 것이 적용되는 시간대인지 확인
+            // 적용시간대가 오래된 것이 앞에 오도록 정렬됨. ~OrderBy~Asc
+            List<RegularRecord> regularRecords = regularRecordRepository.findAllByTutoringOrderByAppliedUntilAsc(tutoring);
+            // 과거 마지막 정규기록 ~ 현재 정규시간인 경우 혹은 정규기록이 없는 경우에는 현재 정규시간이 적용됨.
+            List<Time> appliedTimeList = timeList;
+            for (RegularRecord regularRecord: regularRecords) {
+                if (regularRecord.getAppliedUntil().isAfter(startDateTime)) {
+                    // 이 정규시기가 적용되던 기간에 시작한 경우이므로, 이 처음 매칭되는 정규타임을 적용해야 함.
+                    appliedTimeList = parseDayTimeString(regularRecord.getDayTimeString(), tutoring);
+                    break;
+                }
+            }
+            // 당시의 정규시간과 요일 및 시간이 겹치고, 그 날에 정규수업 취소가 되어있지 않은 경우에 겹치는 시간 반환.
+            for (Time time: appliedTimeList) {
+                if (day.equals(time.getDay()) &&
+                        isOverlapped(startTime, endTime, time.getStartTime(), time.getEndTime()) &&
+                        cancellationRepository.findAllByCancelledDateTime(LocalDateTime.of(date, time.getStartTime())).isEmpty())
+                {
+                    return time;
+                }
+            }
+        }
+        // 안 겹치는 경우
         return null;
     }
+    /* 정규일정의 등록과 변경에 사용*/
     private Time isPreoccupiedDayTime(Tutoring tutoring, Time targetTime) {
         List<Time> timeList = tutoring.getTimes();
         for (Time time: timeList) {
@@ -630,5 +843,30 @@ public class ScheduleService {
             timeList.add(regularTime);
         }
         return timeList;
+    }
+    private String parseDayToString(DayOfWeek dayOfWeek) {
+        String day="";
+        switch (dayOfWeek) {
+            case MONDAY -> day = "월";
+            case TUESDAY -> day = "화";
+            case WEDNESDAY -> day = "수";
+            case THURSDAY -> day = "목";
+            case FRIDAY -> day = "금";
+            case SATURDAY -> day = "토";
+            case SUNDAY -> day = "일";
+        }
+        return day;
+    }
+    private String makeDayTimeString(List<Time> timeList) {
+        StringBuilder dayTimeScheduleBuilder = new StringBuilder();
+        for (Time time: timeList) {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
+            // e.g. 1 13:50 15:50, ...
+            dayTimeScheduleBuilder.append(time.getDay().getValue()).append(" ").append(time.getStartTime().format(formatter)).append(" ").append(time.getEndTime().format(formatter)).append(", ");
+        }
+        String dayTimeSchedule = dayTimeScheduleBuilder.toString();
+        int lastIdx = dayTimeSchedule.length() - 1;
+        dayTimeSchedule = dayTimeSchedule.substring(0, lastIdx - 1);
+        return dayTimeSchedule;
     }
 }
