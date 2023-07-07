@@ -10,6 +10,7 @@ import springbeam.susukgwan.ResponseMsg;
 import springbeam.susukgwan.ResponseMsgList;
 import springbeam.susukgwan.S3Service;
 import springbeam.susukgwan.assignment.dto.SubmitRequestDTO;
+import springbeam.susukgwan.fcm.PushService;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -25,6 +26,7 @@ public class SubmitService {
     private final SubmitRepository submitRepository;
     private final S3Service s3Service;
     private final AssignmentRepository assignmentRepository;
+    private final PushService pushService;
 
     /* 숙제 인증피드 등록 */
     public ResponseEntity<?> submitFiles (Long assignmentId, List<MultipartFile> multipartFileList) throws IOException {
@@ -32,7 +34,8 @@ public class SubmitService {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseMsg(ResponseMsgList.SUBMIT_CONSTRAINTS.getMsg()));
         }
 
-        Optional<Assignment> assignment = assignmentRepository.findById(assignmentId);
+        Optional<Assignment> assignmentOptional = assignmentRepository.findById(assignmentId);
+        Assignment assignment = assignmentOptional.get();
         List<String> imageUrlList = new ArrayList<>();
 
         int index = 1;
@@ -45,13 +48,20 @@ public class SubmitService {
         }
 
         Submit submit = Submit.builder()
-                .assignment(assignment.get())
+                .assignment(assignment)
                 .dateTime(LocalDateTime.now(ZoneId.of("Asia/Seoul")))
                 .rate(0L)
                 .imageUrl(imageUrlList)
                 .build();
 
+        assignment.setCount(assignment.getCount() + 1); // 제출횟수 1 증가
+        if (assignment.getCount() >= assignment.getGoalCount()) { // 제출횟수 모두 채우면 완료(true)
+            assignment.setIsCompleted(true);
+        }
+        assignmentRepository.save(assignment);
+
         submitRepository.save(submit);
+        pushService.assignmentSubmitNotification(assignment, Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName()));
         return ResponseEntity.ok().build();
     }
 
@@ -63,6 +73,14 @@ public class SubmitService {
             s3Service.delete(url); // S3에 업로드된 이미지들 삭제 먼저
         }
         submitRepository.deleteById(submitId); // 숙제 인증피드 삭제
+
+        Assignment assignment = submit.get().getAssignment();
+        assignment.setCount(assignment.getCount() - 1); // 제출횟수 1 감소
+        if (assignment.getCount() < assignment.getGoalCount()) { // 제출횟수 모두 못채우면 다시 미완료로 (false)
+            assignment.setIsCompleted(false);
+        }
+        assignmentRepository.save(assignment);
+
         return ResponseEntity.ok().build();
     }
 

@@ -3,11 +3,13 @@ package springbeam.susukgwan.fcm;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import springbeam.susukgwan.schedule.Time;
+import springbeam.susukgwan.assignment.Assignment;
+import springbeam.susukgwan.assignment.AssignmentRepository;
 import springbeam.susukgwan.schedule.dto.ReplaceScheduleDTO;
 import springbeam.susukgwan.tutoring.Tutoring;
 import springbeam.susukgwan.user.Role;
 import springbeam.susukgwan.user.User;
+import springbeam.susukgwan.user.UserRepository;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -23,6 +25,10 @@ public class PushService {
     private FCMTokenRepository fcmTokenRepository;
     @Autowired
     private PushRepository pushRepository;
+    @Autowired
+    private AssignmentRepository assignmentRepository;
+    @Autowired
+    private UserRepository userRepository;
 
     // Notify tutor that tutee or parent approves the invitation.
     public void approveInvitationNotification(Tutoring tutoring, User invitedUser) {
@@ -158,6 +164,62 @@ public class PushService {
             }
         }
     }
+
+    /* 선생님한테 숙제인증 등록알림 보내기 */
+    public void assignmentSubmitNotification (Assignment assignment, Long tuteeId) {
+        String title = "숙제 인증";
+        String topic = "submit";
+        String body = "";
+
+        Optional<User> tutee = userRepository.findById(tuteeId);
+        if (tutee.isPresent()) {
+            body = "'" + tutee.get().getName() + "' 학생이 '" + assignment.getNote().getTutoring().getSubject().getName() + "' 수업의 '" + assignment.getBody() + "' 숙제에 인증피드를 올렸습니다.";
+        }
+
+        log.info(body);
+
+        PushRequest pushRequest = PushRequest.builder()
+                .title(title).topic(topic).body(body).build();
+
+        Long tutorId = assignmentRepository.GetTutorIdOfAssignment(assignment.getId());
+
+        // send to tutor
+        if (tutorId != null) {
+            Optional<FCMToken> tutorTokenOptional = fcmTokenRepository.findByUserId(tutorId);
+            if (tutorTokenOptional.isPresent() && tutorTokenOptional.get().isAlarmOn()) {
+                pushRequest.setToken(tutorTokenOptional.get().getFcmToken());
+                sendPushNotificationByTopic(pushRequest);
+                Push pushSave = Push.builder().title(title).topic(topic).body(body).receiverId(tutorId).isRead(false).build();
+                pushRepository.save(pushSave);
+            }
+        }
+    }
+
+    /* 학생에게 숙제 당일 마감 알림 보내기 */
+    public void assignmentDeadlineNotification (Assignment assignment) {
+        String title = "숙제 마감";
+        String topic = "deadline";
+        String body = "'" + assignment.getNote().getTutoring().getSubject().getName() + "' 수업의 '" + assignment.getBody() + "' 숙제 마감기한이 오늘(" + assignment.getEndDate() + ")까지입니다.";
+
+        log.info(body);
+
+        PushRequest pushRequest = PushRequest.builder()
+                .title(title).topic(topic).body(body).build();
+
+        Long tuteeId = assignmentRepository.GetTuteeIdOfAssignment(assignment.getId());
+
+        // send to tutee
+        if (tuteeId != null) {
+            Optional<FCMToken> tuteeTokenOptional = fcmTokenRepository.findByUserId(tuteeId);
+            if (tuteeTokenOptional.isPresent() && tuteeTokenOptional.get().isAlarmOn()) {
+                pushRequest.setToken(tuteeTokenOptional.get().getFcmToken());
+                sendPushNotificationByTopic(pushRequest);
+                Push pushSave = Push.builder().title(title).topic(topic).body(body).receiverId(tuteeId).isRead(false).build();
+                pushRepository.save(pushSave);
+            }
+        }
+    }
+
     private String replaceDay(String dayTime) {
         StringBuilder replacedDayTime = new StringBuilder();
         String[] split = dayTime.split(",");
