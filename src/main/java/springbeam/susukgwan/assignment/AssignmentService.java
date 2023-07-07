@@ -17,6 +17,7 @@ import springbeam.susukgwan.note.NoteRepository;
 import springbeam.susukgwan.tutoring.Tutoring;
 import springbeam.susukgwan.tutoring.TutoringRepository;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -47,6 +48,23 @@ public class AssignmentService {
 
             Optional<Note> note = noteRepository.findFirst1ByTutoringOrderByDateTimeDesc(tutoring.get());
             if (note.isPresent()) {
+                // 목표 제출횟수 계산
+                LocalDate startDate = createAssignment.getStartDate();
+                LocalDate endDate = createAssignment.getEndDate();
+                List<LocalDate> dateList = startDate.datesUntil(endDate.plusDays(1)).collect(Collectors.toList());
+                Long goalCount = 0L;
+
+                if (createAssignment.getFrequency().isEmpty()) {
+                    goalCount = 1L;
+                }
+                else {
+                    for (LocalDate d : dateList) {
+                        if (createAssignment.getFrequency().contains(Long.valueOf(d.getDayOfWeek().getValue()))) {
+                            goalCount += 1;
+                        }
+                    }
+                }
+
                 Assignment assignment = Assignment.builder()
                         .body(createAssignment.getBody())
                         .startDate(createAssignment.getStartDate())
@@ -55,6 +73,8 @@ public class AssignmentService {
                         .amount(createAssignment.getAmount())
                         .isCompleted(false)
                         .note(note.get())
+                        .count(0L)
+                        .goalCount(goalCount)
                         .build();
 //                assignmentRepository.save(assignment);
                 return ResponseEntity.ok(assignment);
@@ -78,20 +98,52 @@ public class AssignmentService {
             a.setBody(updateAssignment.getBody());
         }
 
+        Boolean dateChangeFlag = false;
+
         if (updateAssignment.getStartDate() != null) {
             a.setStartDate(updateAssignment.getStartDate());
+            dateChangeFlag = true;
         }
 
         if (updateAssignment.getEndDate() != null) {
             a.setEndDate(updateAssignment.getEndDate());
+            dateChangeFlag = true;
         }
 
         if (updateAssignment.getFrequency() != null) {
             a.setFrequency(updateAssignment.getFrequency());
+            dateChangeFlag = true;
         }
 
         if (updateAssignment.getAmount() != null) {
             a.setAmount(updateAssignment.getAmount());
+        }
+
+        if (dateChangeFlag == true) {
+            // 시작날짜, 마감날짜, 제출빈도 중에 하나라도 변하면 목표 제출횟수 다시 계산
+            LocalDate startDate = a.getStartDate();
+            LocalDate endDate = a.getEndDate();
+            List<LocalDate> dateList = startDate.datesUntil(endDate.plusDays(1)).collect(Collectors.toList());
+            Long goalCount = 0L;
+
+            if (a.getFrequency().isEmpty()) {
+                goalCount = 1L;
+            }
+            else {
+                for (LocalDate d : dateList) {
+                    if (a.getFrequency().contains(Long.valueOf(d.getDayOfWeek().getValue()))) {
+                        goalCount += 1;
+                    }
+                }
+            }
+
+            a.setGoalCount(goalCount);
+
+            if (a.getCount() >= a.getGoalCount()) {
+                a.setIsCompleted(true);
+            } else {
+                a.setIsCompleted(false);
+            }
         }
 
         assignmentRepository.save(a);

@@ -46,4 +46,10 @@ public class Assignment {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "note_id")
     private Note note; // 수업일지
+
+    @Column(nullable = false)
+    private Long count; // 제출횟수
+
+    @Column(nullable = false)
+    private Long goalCount; // 제출해야하는 횟수
 }
