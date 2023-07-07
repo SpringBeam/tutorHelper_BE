@@ -14,6 +14,7 @@ import springbeam.susukgwan.note.NoteService;
 import springbeam.susukgwan.schedule.dto.*;
 import springbeam.susukgwan.tutoring.Tutoring;
 import springbeam.susukgwan.tutoring.TutoringRepository;
+import springbeam.susukgwan.tutoring.dto.DayTimeDTO;
 import springbeam.susukgwan.tutoring.dto.NoteSimpleInfoDTO;
 import springbeam.susukgwan.user.Role;
 import springbeam.susukgwan.user.User;
@@ -394,13 +395,19 @@ public class ScheduleService {
           */
     }
 
-    /* 새로운 수업이 지금 이후로 다른 일정과 겹치지 않으면 등록. 다른 수업의 정규시간과 겹치는지 비교, 현재시간 이후의 모든 비정기일정과 겹치는지 비교 */
-    public ResponseEntity<?> registerRegularSchedule(Tutoring targetTutoring, String dayTime) {
+
+
+    /* 새로운 수업이 지금 이후로 다른 수업의 정규시간과 겹치는지 비교, 현재시간 이후의 모든 비정기일정과 겹치는지 비교 */
+    /* 그런데 이 경우, 이전의 비정규 일정들이 새로 등록된 정규일정과 시간이 겹쳐서 나타날 수 있음. () */
+    /* 비정규일정도 겹치지 않도록 하기! -> 즉, 현재시간 기준 말고 과외 시작시간 이후로 설정! (위의 정규 변경은 현재시간이 시작이므로 서로 다름.) */
+    // 두 함수로 분리하여 check 하고 오류 responseEntity 보내주는 함수 와 시간, 수업을 저장하는 함수를 따로 분리해야 될듯!
+    public ResponseEntity<?> checkRegularScheduleRegistration(Tutoring targetTutoring, List<DayTimeDTO> dayTimeList) {
         // called by registerTutoring
         // compare day, startTime, endTime of new regular schedule with the other regular schedules
         // to check if it is preoccupied or not.
         List<Tutoring> tutoringList = tutoringRepository.findAllByTutorId(targetTutoring.getTutorId());
-        List<Time> timeList = parseDayTimeString(dayTime, targetTutoring);
+        List <Time> timeList = convertToTimeList(targetTutoring, dayTimeList);
+        // List<Time> timeList = parseDayTimeString(dayTime, targetTutoring);
         for (Tutoring tutoring : tutoringList) {
             if (tutoring.getId() == targetTutoring.getId()) continue;
             // if the dayTime is preoccupied by a certain regular time, return that time.
@@ -419,9 +426,11 @@ public class ScheduleService {
         }
         // check all irregular times
         List<Irregular> irregularList = irregularRepository.findAllByTutorId(targetTutoring.getTutorId());
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startedAt = LocalDateTime.of(targetTutoring.getStartDate(), LocalTime.of(0,0));
+        // LocalDateTime now = LocalDateTime.now();
         for (Irregular irregular: irregularList) {
-            if (LocalDateTime.of(irregular.getDate(), irregular.getEndTime()).isBefore(now)) continue;
+            // 시작 날짜 이후(시작 포함)에 대해서만 체크함.
+            if (LocalDateTime.of(irregular.getDate(), irregular.getEndTime()).isBefore(startedAt)) continue;
             for (Time time: timeList) {
                 // 미래의 일정이고, 요일이 같고 시간이 겹치면
                 if (time.getDay().equals(irregular.getDate().getDayOfWeek()) &&
@@ -438,14 +447,8 @@ public class ScheduleService {
                 }
             }
         }
-        // register regular schedule
-        timeRepository.saveAllAndFlush(timeList);
+        // 새로운 수업의 정규일정 등록가능
         return ResponseEntity.ok().build();
-        /* 자신의 모든 정규일정을 확인하여 겹치면 어떤 일정이 겹쳤는지 메시지 전송
-           모든 비정규일정과 겹치면 에러응답 및 어떤 일정이 겹쳤는지 전송
-           다만, 지나간 비정규일정을 고려하면 안된다.
-           정규시간을 등록한다.
-          */
     }
     public ResponseEntity<?> getScheduleListYearMonth(Long tutoringId, int year, int month) {
         // Check whether the request user is the tutor/tutee of this tutoring. (and parent)
@@ -830,6 +833,19 @@ public class ScheduleService {
         // start time is in-between or end time is in-between.
         return (startTime1.isAfter(startTime2) && startTime2.isBefore(endTime2)) || (endTime1.isAfter(startTime2) && endTime1.isBefore(endTime2));
     }
+
+    public List<Time> convertToTimeList(Tutoring tutoring, List<DayTimeDTO> dayTimeList) {
+        List<Time> timeList = new ArrayList<>();
+        for (DayTimeDTO dayTimeDTO: dayTimeList) {
+            DayOfWeek dayOfWeek = DayOfWeek.of(dayTimeDTO.getDay());
+            LocalTime startTime = LocalTime.parse(dayTimeDTO.getStartTime());
+            LocalTime endTime = LocalTime.parse(dayTimeDTO.getEndTime());
+            Time time = Time.builder().day(dayOfWeek).startTime(startTime).endTime(endTime).tutoring(tutoring).build();
+            timeList.add(time);
+        }
+        return timeList;
+    }
+
     private List<Time> parseDayTimeString(String dayTimeString, Tutoring tutoring) {
         String[] split = dayTimeString.split(",");
         Iterator<String> it = Arrays.stream(split).iterator();
