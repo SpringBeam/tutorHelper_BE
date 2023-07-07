@@ -6,6 +6,7 @@ import lombok.experimental.SuperBuilder;
 import springbeam.susukgwan.note.Note;
 import springbeam.susukgwan.schedule.Cancellation;
 import springbeam.susukgwan.schedule.Irregular;
+import springbeam.susukgwan.schedule.RegularRecord;
 import springbeam.susukgwan.schedule.Time;
 import springbeam.susukgwan.subject.Subject;
 import springbeam.susukgwan.tutoring.color.Color;
@@ -39,6 +40,9 @@ public class Tutoring {
 
     @OneToMany(mappedBy = "tutoring", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private final List<Cancellation> cancellations = new ArrayList<>(); // 튜터링 삭제 시 관련 정규취소가 삭제됨.
+
+    @OneToMany(mappedBy = "tutoring", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private final List<RegularRecord> regularRecords = new ArrayList<>(); //
 
     @OneToMany(mappedBy = "tutoring", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private final List<Irregular> irregulars = new ArrayList<>(); // 튜터링 삭제 시 관련 비정규일정이 삭제됨.

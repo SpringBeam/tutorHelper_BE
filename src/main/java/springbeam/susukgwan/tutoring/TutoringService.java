@@ -72,8 +72,12 @@ public class TutoringService {
         Tutoring newTutoring = Tutoring.builder().tutorId(tutorId).startDate(startDate)
                         .subject(subject) // 과목 매핑
                         .build();
-        tutoringRepository.save(newTutoring);
-        return scheduleService.registerRegularSchedule(newTutoring, registerTutoringDTO.getDayTime());
+        ResponseEntity response = scheduleService.registerRegularSchedule(newTutoring, registerTutoringDTO.getDayTime());
+        // 일정 등록이 성공할 경우에만 수업을 저장하도록 한다.
+        if (response.getStatusCode() == HttpStatus.OK) {
+            tutoringRepository.save(newTutoring);
+        }
+        return response;
     }
 
     public ResponseEntity<?> updateTutoring(Long tutoringId, UpdateTutoringDTO updateTutoringDTO) {
@@ -325,9 +329,8 @@ public class TutoringService {
             tutoringDetailDTO.setParentName(userRepository.findById(tutoring.getParentId()).get().getName());
         }
         // get schedule list and include it to DTO
-        // TODO 아래 타입체크? 혹은 추가 함수?
-        ResponseEntity<?> scheduleListYearMonth = scheduleService.getScheduleListYearMonth(tutoringId, year, month);
-        List<ScheduleInfoResponseDTO> scheduleList = (List<ScheduleInfoResponseDTO>) scheduleListYearMonth.getBody();
+        List<ScheduleInfoResponseDTO> scheduleList = scheduleService.getOnlyScheduleListYearMonth(tutoring, year, month);
+
         tutoringDetailDTO.setScheduleList(scheduleList);
 
         // get review list and include it to DTO
