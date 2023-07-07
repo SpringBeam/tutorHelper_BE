@@ -27,4 +27,13 @@ public class AssignmentScheduler {
             pushService.assignmentDeadlineNotification(a);
         }
     }
+
+    @Scheduled(cron = "0 0 12 * * *")
+    public void checkNotCompleted() {
+        log.info(String.valueOf(LocalDateTime.now()));
+        List<Assignment> assignmentList = assignmentRepository.findByEndDateAndIsCompleted(LocalDate.now().minusDays(1), false); // 어제 마감인것 중 미완료된 숙제들
+        for (Assignment a : assignmentList) {
+            pushService.assignmentCompletedNotification(a);
+        }
+    }
 }

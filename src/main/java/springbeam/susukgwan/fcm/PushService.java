@@ -220,6 +220,38 @@ public class PushService {
         }
     }
 
+    /* 선생님한테 숙제 미완료 알림 보내기 */
+    public void assignmentCompletedNotification (Assignment assignment) {
+        String title = "숙제 미완료";
+        String topic = "completed";
+        String body = "";
+
+        Long tuteeId = assignment.getNote().getTutoring().getTuteeId();
+        if (tuteeId != null) {
+            Optional<User> tutee = userRepository.findById(tuteeId);
+            if (tutee.isPresent()) {
+                body = "'" + tutee.get().getName() + "' 학생이 '" + assignment.getNote().getTutoring().getSubject().getName() + "' 수업의 '" + assignment.getBody() + "' 숙제를 완료하지 않았습니다.";
+            }
+        }
+
+        log.info(body);
+
+        PushRequest pushRequest = PushRequest.builder()
+                .title(title).topic(topic).body(body).build();
+
+        // send to tutor
+        Long tutorId = assignmentRepository.GetTutorIdOfAssignment(assignment.getId());
+        if (tutorId != null) {
+            Optional<FCMToken> tutorTokenOptional = fcmTokenRepository.findByUserId(tutorId);
+            if (tutorTokenOptional.isPresent() && tutorTokenOptional.get().isAlarmOn()) {
+                pushRequest.setToken(tutorTokenOptional.get().getFcmToken());
+                sendPushNotificationByTopic(pushRequest);
+                Push pushSave = Push.builder().title(title).topic(topic).body(body).receiverId(tutorId).isRead(false).build();
+                pushRepository.save(pushSave);
+            }
+        }
+    }
+
     private String replaceDay(String dayTime) {
         StringBuilder replacedDayTime = new StringBuilder();
         String[] split = dayTime.split(",");
