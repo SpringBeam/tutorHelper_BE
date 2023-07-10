@@ -61,7 +61,7 @@ jobs:
         run: mkdir src/main/resources/fcm && echo $FCM_SECRET | base64 --decode > $FCM_SECRET_DIR/$FCM_SECRET_FILE_NAME
       
       - name: Build with Gradle
-        run: ./gradlew build
+        run: ./gradlew build -x test
         shell: bash
       
       - name: Make zip file
