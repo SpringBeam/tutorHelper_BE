@@ -53,6 +53,12 @@ jobs:
             ${{ secrets.S3_SECRETKEY }}
             ${{ secrets.S3_BUCKET  }}
             
+      - name: Copy Secret File
+        env:
+          FCM_SECRET: ${{ secrets.FCM_SECRET }}
+          FCM_SECRET_DIR: src/main/resources/fcm
+          FCM_SECRET_FILE_NAME: susukgwan-firebase-adminsdk-17x8y-30c483a728.json
+        run: echo FCM_SECRET | base64 --decode > $FCM_SECRET_DIR/$FCM_SECRET_FILE_NAME
       
       - name: Build with Gradle
         run: ./gradlew build
