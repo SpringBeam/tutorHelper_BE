@@ -1,6 +1,9 @@
 package springbeam.susukgwan.schedule.dto;
 
 import lombok.*;
+import springbeam.susukgwan.tutoring.dto.DayTimeDTO;
+
+import java.util.List;
 
 @Getter
 @Setter
@@ -9,5 +12,5 @@ import lombok.*;
 @NoArgsConstructor
 public class ChangeRegularDTO {
     private Long tutoringId;
-    private String dayTime;
+    private List<DayTimeDTO> dayTimeList;
 }

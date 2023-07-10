@@ -313,6 +313,7 @@ public class TutoringService {
         else if (userId.equals(tutoring.getParentId())) role = Role.PARENT;
         else return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 
+        List<DayTimeDTO> dayTimeDTOList = convertToDayTimeList(tutoring.getTimes());
         // get basic info of tutoring
         TutoringDetailDTO tutoringDetailDTO = TutoringDetailDTO.builder()
                 .tutoringId(tutoring.getId())
@@ -320,7 +321,7 @@ public class TutoringService {
                 .tuteeName("")
                 .parentName("")
                 .startDate(tutoring.getStartDate().toString())
-                .dayTime(makeDayTimeString(tutoring.getTimes()))
+                .dayTimeList(dayTimeDTOList)
                 .color(0)
         .build();
         if (tutoring.getColor() != null) {
@@ -359,6 +360,18 @@ public class TutoringService {
         tutoringDetailDTO.setNoteList(noteSimpleInfoDTOS);
 
         return ResponseEntity.ok(tutoringDetailDTO);
+    }
+
+    private List<DayTimeDTO> convertToDayTimeList(List<Time> times) {
+        List<DayTimeDTO> dayTimeDTOList = new ArrayList<>();
+        for (Time time: times) {
+            dayTimeDTOList.add(DayTimeDTO.builder()
+                            .day(time.getDay().getValue())
+                            .startTime(time.getStartTime().toString())
+                            .endTime(time.getEndTime().toString())
+                    .build());
+        }
+        return dayTimeDTOList;
     }
 
     private String makeDayTimeString(List<Time> timeList) {
