@@ -104,6 +104,25 @@ public class FCMService {
         return ResponseEntity.ok().body(pushListDTO);
     }
 
+    public ResponseEntity<?> testFCMAlarm() {
+        // Check whether the request user actually has this tutoring.
+        String tutorIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
+        Long userId = Long.parseLong(tutorIdStr);
+        Optional<FCMToken> fcmTokenOptional = fcmTokenRepository.findByUserId(userId);
+        if (fcmTokenOptional.isPresent()) {
+            PushRequest pushRequest = PushRequest.builder().title("test").topic("test").body("학교 종이 쌩쌩쌩").token(fcmTokenOptional.get().getFcmToken()).build();
+            try {
+                sendMessageToToken(pushRequest);
+                return ResponseEntity.ok().build();
+            }
+            catch (Exception e) {
+                log.error(e.getMessage());
+                return ResponseEntity.internalServerError().body(e.getMessage());
+            }
+        }
+        else return ResponseEntity.status(HttpStatus.CONFLICT).body(new ResponseMsg(ResponseMsgList.NO_FCM_TOKEN_ISSUED.getMsg()));
+    }
+
     /* Send a message with a token */
     public void sendMessageToToken(PushRequest request) throws InterruptedException, ExecutionException, CancellationException {
         Message message = getPreconfiguredMessageToToken(request);

@@ -18,6 +18,10 @@ public class FCMController {
     public ResponseEntity saveFCMToken(@RequestBody SaveFCMTokenDTO saveFCMTokenDTO) {
         return fcmService.saveFCMToken(saveFCMTokenDTO.getFcmToken());
     }
+    @GetMapping("/test")
+    public ResponseEntity testFCMAlarm() {
+        return fcmService.testFCMAlarm();
+    }
     @PatchMapping("/alarm")
     public ResponseEntity setAlarmState(@RequestBody SetAlarmDTO setAlarmDTO) {
         return fcmService.setAlarmState(setAlarmDTO.getIsAlarmOn());
