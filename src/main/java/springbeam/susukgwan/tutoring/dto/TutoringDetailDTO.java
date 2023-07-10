@@ -20,7 +20,7 @@ public class TutoringDetailDTO {
     private String tuteeName;
     private String parentName;
     private String startDate;
-    private String dayTime;
+    private List<DayTimeDTO> dayTimeList;
     private List<ScheduleInfoResponseDTO> scheduleList;
     private List<ReviewResponseDTO> reviewList;
     private List<AssignmentResponseDTO> assignmentList;

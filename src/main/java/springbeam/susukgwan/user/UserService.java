@@ -11,7 +11,7 @@ import springbeam.susukgwan.fcm.FCMToken;
 import springbeam.susukgwan.fcm.FCMTokenRepository;
 import springbeam.susukgwan.user.dto.SignUpSocialUserDTO;
 import springbeam.susukgwan.user.dto.UpdateDTO;
-import springbeam.susukgwan.user.vo.UserDetailVO;
+import springbeam.susukgwan.user.dto.UserDetailDTO;
 
 import java.util.Optional;
 
@@ -53,7 +53,7 @@ public class UserService {
         if (userOptional.isPresent()) {
             User user = userOptional.get();
             return ResponseEntity.ok().body(
-                    UserDetailVO.builder().role(user.getRole().getRole()).name(user.getName()).build()
+                    UserDetailDTO.builder().role(user.getRole().getRole()).name(user.getName()).userId(user.getUserId()).build()
             );
         }
         else return ResponseEntity.status(HttpStatus.CONFLICT).body(new ResponseMsg(ResponseMsgList.NO_SUCH_USER_IN_DB.getMsg()));
