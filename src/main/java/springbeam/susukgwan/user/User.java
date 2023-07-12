@@ -47,4 +47,6 @@ public class User {
     private Role role;  // 선생, 학생, 학부모 역할 중 하나
 
     private LocalDateTime createdAt;
+
+    private String profileImg; // 프로필 이미지 url
 }

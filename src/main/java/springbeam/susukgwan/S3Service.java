@@ -80,4 +80,9 @@ public class S3Service {
 
         return preSignedURL;
     }
+
+    /* public 객체 url 반환 */
+    public String getPublicURL (String keyName) {
+        return amazonS3.getUrl(bucket, keyName).toString();
+    }
 }
