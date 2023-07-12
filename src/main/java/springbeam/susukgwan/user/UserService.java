@@ -135,4 +135,20 @@ public class UserService {
         }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseMsg(ResponseMsgList.NO_SUCH_USER_IN_DB.getMsg()));
     }
+
+    /* 프로필 사진 가져오기 */
+    public ResponseEntity<?> getProfile() {
+        String userId = SecurityContextHolder.getContext().getAuthentication().getName();
+        Optional<User> userOptional = userRepository.findById(Long.parseLong(userId));
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            if (user.getProfileImg() != null) {
+                String url = s3Service.getPublicURL(user.getProfileImg());
+                return ResponseEntity.ok(url);
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NO_PROFILE.getMsg()));
+            }
+        }
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseMsg(ResponseMsgList.NO_SUCH_USER_IN_DB.getMsg()));
+    }
 }

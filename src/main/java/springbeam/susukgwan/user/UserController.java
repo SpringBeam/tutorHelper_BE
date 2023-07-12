@@ -46,4 +46,9 @@ public class UserController {
     public ResponseEntity deleteProfile() {
         return userService.deleteProfile();
     }
+
+    @GetMapping("/profile")
+    public ResponseEntity getProfile() {
+        return userService.getProfile();
+    }
 }
