@@ -30,6 +30,13 @@ public class SubmitService {
 
     /* 숙제 인증피드 등록 */
     public ResponseEntity<?> submitFiles (Long assignmentId, List<MultipartFile> multipartFileList) throws IOException {
+        // 업로드 파일 존재여부 확인
+        for (MultipartFile multipartFile : multipartFileList) {
+            if (multipartFile.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseMsg(ResponseMsgList.NO_FILE.getMsg()));
+            }
+        }
+
         if (multipartFileList.size() > 3) { // 인증사진은 최대 3개
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseMsg(ResponseMsgList.SUBMIT_CONSTRAINTS.getMsg()));
         }
