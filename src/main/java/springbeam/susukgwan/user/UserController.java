@@ -47,8 +47,8 @@ public class UserController {
         return userService.deleteProfile();
     }
 
-    @GetMapping("/profile")
-    public ResponseEntity getProfile() {
-        return userService.getProfile();
+    @GetMapping("/profile/{userId}")
+    public ResponseEntity getProfile(@PathVariable("userId") Long userId) {
+        return userService.getProfile(userId);
     }
 }
