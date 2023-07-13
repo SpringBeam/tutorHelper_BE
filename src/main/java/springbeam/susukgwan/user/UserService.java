@@ -137,9 +137,8 @@ public class UserService {
     }
 
     /* 프로필 사진 가져오기 */
-    public ResponseEntity<?> getProfile() {
-        String userId = SecurityContextHolder.getContext().getAuthentication().getName();
-        Optional<User> userOptional = userRepository.findById(Long.parseLong(userId));
+    public ResponseEntity<?> getProfile(Long userId) {
+        Optional<User> userOptional = userRepository.findById(userId);
         if (userOptional.isPresent()) {
             User user = userOptional.get();
             if (user.getProfileImg() != null) {
