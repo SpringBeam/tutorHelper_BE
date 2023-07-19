@@ -50,7 +50,8 @@ public class SecurityConfig {
                 .cors().configurationSource(
                         request -> {
                             CorsConfiguration corsConfiguration = new CorsConfiguration();
-                            corsConfiguration.setAllowedOrigins(List.of("http://localhost:19006"));
+                            // corsConfiguration.setAllowedOrigins(List.of("http://localhost:19006"));
+                            corsConfiguration.setAllowedOrigins(List.of("*"));
                             corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH","OPTIONS"));
                             corsConfiguration.setAllowedHeaders(List.of("*")); // 확인 필요
                             return corsConfiguration;
