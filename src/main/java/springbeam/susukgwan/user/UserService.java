@@ -1,6 +1,7 @@
 package springbeam.susukgwan.user;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +22,7 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserService {
     @Autowired
     private UserRepository userRepository;
@@ -145,6 +147,7 @@ public class UserService {
                 String url = s3Service.getPublicURL(user.getProfileImg());
                 return ResponseEntity.ok(url);
             } else {
+                log.error("here comes");
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NO_PROFILE.getMsg()));
             }
         }

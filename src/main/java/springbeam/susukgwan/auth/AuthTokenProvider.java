@@ -29,7 +29,7 @@ public class AuthTokenProvider {
     @Getter
     private final Long refreshTokenExpiry = 1000 * 60L * 60L * 24L * 14L; // 14일
 
-    public AuthTokenProvider(@Value("${jwt.secret.key}}") String secretKey) {
+    public AuthTokenProvider(@Value("${jwt.secret.key}") String secretKey) {
         this.key = Keys.hmacShaKeyFor(secretKey.getBytes());
     }
 
