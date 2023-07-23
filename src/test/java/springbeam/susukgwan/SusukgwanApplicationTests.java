@@ -10,9 +10,15 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 import springbeam.susukgwan.fcm.FCMService;
 import springbeam.susukgwan.fcm.PushRequest;
+import springbeam.susukgwan.schedule.ScheduleService;
+import springbeam.susukgwan.tutoring.Tutoring;
+import springbeam.susukgwan.tutoring.TutoringRepository;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 
 @SpringBootTest
@@ -20,7 +26,11 @@ import java.util.Random;
 class SusukgwanApplicationTests {
 	@Autowired
 	private FCMService fcmService;
-	private final static Logger LOG = LoggerFactory.getLogger(SusukgwanApplicationTests.class);
+	@Autowired
+	private ScheduleService scheduleService;
+	@Autowired
+	private TutoringRepository tutoringRepository;
+	private Logger logger = LoggerFactory.getLogger(SusukgwanApplicationTests.class);
 
 	@Test
 	void contextLoads() {
@@ -34,9 +44,26 @@ class SusukgwanApplicationTests {
 			return;
 		}
 		catch (Exception e) {
-			LOG.error(e.getMessage());
+			logger.error(e.getMessage());
 			return;
 		}
+	}
+	@Test
+	@Transactional
+	void scheduleDuplicate() {
+		List<Tutoring> tutoringList = tutoringRepository.findAllByTutorId(1L);
+		for (Tutoring tutoring: tutoringList) {
+			logger.info(tutoring.getTimes().get(0).getStartTime().toString());
+			logger.info(tutoring.getTutorId().toString());
+		}
+	}
+	@Test
+	public void deleteTutoring() {
+		Optional<Tutoring> byId = tutoringRepository.findById(13L);
+		if (byId.isPresent()) {
+			tutoringRepository.delete(byId.get());
+		}
+		//test 결과 mysql workbench에서는 foreign key constraints 때문에 삭제가 안 되지만, JPA에서 삭제 시 제대로 tutoring과 time 모두 삭제됨.
 	}
 
 }

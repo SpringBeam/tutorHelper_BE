@@ -406,6 +406,7 @@ public class ScheduleService {
         // compare day, startTime, endTime of new regular schedule with the other regular schedules
         // to check if it is preoccupied or not.
         List<Tutoring> tutoringList = tutoringRepository.findAllByTutorId(targetTutoring.getTutorId());
+        log.info(tutoringList.toString());
         List <Time> timeList = convertToTimeList(targetTutoring, dayTimeList);
         // List<Time> timeList = parseDayTimeString(dayTime, targetTutoring);
         for (Tutoring tutoring : tutoringList) {
@@ -840,9 +841,9 @@ public class ScheduleService {
         return null;
     }
 
-    private boolean isOverlapped(LocalTime startTime1, LocalTime endTime1, LocalTime startTime2, LocalTime endTime2) {
-        // start time is in-between or end time is in-between.
-        return (startTime1.isAfter(startTime2) && startTime2.isBefore(endTime2)) || (endTime1.isAfter(startTime2) && endTime1.isBefore(endTime2));
+    private boolean isOverlapped(LocalTime s1, LocalTime e1, LocalTime s2, LocalTime e2) {
+        // true if the two regular times are overlapped
+        return !(s1.isAfter(e2) || s2.isAfter(e1));
     }
 
     public List<Time> convertToTimeList(Tutoring tutoring, List<DayTimeDTO> dayTimeList) {
