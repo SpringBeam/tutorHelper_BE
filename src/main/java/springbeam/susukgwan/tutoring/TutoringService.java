@@ -79,7 +79,7 @@ public class TutoringService {
             // 일정 등록이 가능한 경우
             tutoringRepository.save(newTutoring);
             List<Time> timeListToSave = scheduleService.convertToTimeList(newTutoring, registerTutoringDTO.getDayTimeList());
-            timeRepository.saveAll(timeListToSave);
+            timeRepository.saveAllAndFlush(timeListToSave);
             return ResponseEntity.ok().build();
         }
         else return response;
@@ -247,7 +247,6 @@ public class TutoringService {
                         .tutoringId(t.getId())
                         .subject(t.getSubject().getName())
                         .tuteeName("")
-                        .dayTime(makeDayTimeString(t.getTimes()))
                         .build();
                 // 튜터링에 학생이 연결되지 않은 경우에는 null이므로 주의해서 다뤄야 한다.
                 if (t.getTuteeId()!=null && userRepository.findById(t.getTuteeId()).isPresent()) {
@@ -264,7 +263,6 @@ public class TutoringService {
                         .tutoringId(t.getId())
                         .subject(t.getSubject().getName())
                         .tutorName("")
-                        .dayTime(makeDayTimeString(t.getTimes()))
                         .build();
                 if (userRepository.findById(t.getTutorId()).isPresent()) {
                     DTOTutee.setTutorName(userRepository.findById(t.getTutorId()).get().getName());
@@ -281,7 +279,6 @@ public class TutoringService {
                         .subject(t.getSubject().getName())
                         .tutorName("")
                         .tuteeName("")
-                        .dayTime(makeDayTimeString(t.getTimes()))
                         .build();
                 if (userRepository.findById(t.getTutorId()).isPresent()) {
                     DTOParent.setTutorName(userRepository.findById(t.getTutorId()).get().getName());
@@ -373,7 +370,7 @@ public class TutoringService {
         }
         return dayTimeDTOList;
     }
-
+    // unused below
     private String makeDayTimeString(List<Time> timeList) {
         StringBuilder dayTimeScheduleBuilder = new StringBuilder();
         for (Time time: timeList) {
