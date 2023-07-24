@@ -12,6 +12,7 @@ public class TutoringInfoResponseDTO {
         private Long tutoringId;
         private String subject;
         private String tuteeName;
+        private String profileImageUrl;
     }
     @Getter
     @Setter
@@ -20,6 +21,7 @@ public class TutoringInfoResponseDTO {
         private Long tutoringId;
         private String subject;
         private String tutorName;
+        private String profileImageUrl;
     }
     @Getter
     @Setter
@@ -29,5 +31,6 @@ public class TutoringInfoResponseDTO {
         private String subject;
         private String tutorName;
         private String tuteeName;
+        private String profileImageUrl;
     }
 }
