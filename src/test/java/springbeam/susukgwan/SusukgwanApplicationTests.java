@@ -16,6 +16,7 @@ import springbeam.susukgwan.fcm.PushRequest;
 import springbeam.susukgwan.schedule.ScheduleService;
 import springbeam.susukgwan.tutoring.Tutoring;
 import springbeam.susukgwan.tutoring.TutoringRepository;
+import springbeam.susukgwan.tutoring.TutoringService;
 
 import java.util.List;
 import java.util.Optional;
@@ -28,6 +29,8 @@ class SusukgwanApplicationTests {
 	private FCMService fcmService;
 	@Autowired
 	private ScheduleService scheduleService;
+	@Autowired
+	private TutoringService tutoringService;
 	@Autowired
 	private TutoringRepository tutoringRepository;
 	private Logger logger = LoggerFactory.getLogger(SusukgwanApplicationTests.class);
@@ -65,5 +68,19 @@ class SusukgwanApplicationTests {
 		}
 		//test 결과 mysql workbench에서는 foreign key constraints 때문에 삭제가 안 되지만, JPA에서 삭제 시 제대로 tutoring과 time 모두 삭제됨.
 	}
+	@Test
+	public void deleteAllByTutorId() {
+		List<Tutoring> tutoringList = tutoringRepository.findAllByTutorId(12L);
+		tutoringRepository.deleteAll(tutoringList);
+	}
 
+//	@Test
+//	@Transactional
+//	public void getTutoringList() {
+//		Optional<Tutoring> byId = tutoringRepository.findById(15L);
+//		if (byId.isPresent()) {
+//			String str = tutoringService.makeDayTimeString(byId.get().getTimes());
+//			logger.info(str);
+//		}
+//	}
 }

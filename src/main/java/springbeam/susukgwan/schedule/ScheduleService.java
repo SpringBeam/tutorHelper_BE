@@ -300,6 +300,9 @@ public class ScheduleService {
         if (tutoringOptional.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NO_SUCH_TUTORING.getMsg()));
         }
+        if (changeRegularDTO.getDayTimeList().isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
         Tutoring targetTutoring = tutoringOptional.get();
 
         // compare day, startTime, endTime of new regular schedule with the other regular schedules
@@ -407,6 +410,9 @@ public class ScheduleService {
         // to check if it is preoccupied or not.
         List<Tutoring> tutoringList = tutoringRepository.findAllByTutorId(targetTutoring.getTutorId());
         log.info(tutoringList.toString());
+        if (dayTimeList.isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
         List <Time> timeList = convertToTimeList(targetTutoring, dayTimeList);
         // List<Time> timeList = parseDayTimeString(dayTime, targetTutoring);
         for (Tutoring tutoring : tutoringList) {
