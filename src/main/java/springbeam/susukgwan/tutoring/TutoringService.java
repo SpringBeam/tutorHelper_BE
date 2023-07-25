@@ -431,7 +431,9 @@ public class TutoringService {
         TutoringDetailDTO tutoringDetailDTO = TutoringDetailDTO.builder()
                 .tutoringId(tutoring.getId())
                         .subject(tutoring.getSubject().getName())
+                .tutorImage("")
                 .tuteeName("")
+                .tuteeImage("")
                 .parentName("")
                 .startDate(tutoring.getStartDate().toString())
                 .dayTimeList(dayTimeDTOList)
@@ -443,9 +445,15 @@ public class TutoringService {
         }
         if (userRepository.findById(tutoring.getTutorId()).isPresent()) {
             tutoringDetailDTO.setTutorName(userRepository.findById(tutoring.getTutorId()).get().getName());
+            ResponseEntity response = userService.getProfile(tutoring.getTutorId());
+            if (response.getStatusCode() == HttpStatus.OK)
+                tutoringDetailDTO.setTutorImage((String) response.getBody());
         }
         if (tutoring.getTuteeId()!=null && userRepository.findById(tutoring.getTuteeId()).isPresent()) {
             tutoringDetailDTO.setTuteeName(userRepository.findById(tutoring.getTuteeId()).get().getName());
+            ResponseEntity response = userService.getProfile(tutoring.getTuteeId());
+            if (response.getStatusCode() == HttpStatus.OK)
+                tutoringDetailDTO.setTuteeImage((String) response.getBody());
         }
         if (tutoring.getParentId()!=null && userRepository.findById(tutoring.getParentId()).isPresent()) {
             tutoringDetailDTO.setParentName(userRepository.findById(tutoring.getParentId()).get().getName());

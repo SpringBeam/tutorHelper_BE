@@ -17,7 +17,9 @@ public class TutoringDetailDTO {
     private int color;
     private String subject;
     private String tutorName;
+    private String tutorImage;
     private String tuteeName;
+    private String tuteeImage;
     private String parentName;
     private String startDate;
     private List<DayTimeDTO> dayTimeList;
