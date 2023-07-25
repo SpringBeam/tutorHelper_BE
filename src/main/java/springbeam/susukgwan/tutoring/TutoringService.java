@@ -161,7 +161,8 @@ public class TutoringService {
             String newCode;
             do {
                 newCode = generateRandomAlphaNumericString();
-            } while (invitationCodeRepository.findByCode(newCode).isEmpty());
+            } while (invitationCodeRepository.findByCode(newCode).isPresent());
+            // 없는 코드를 찾을 때까지 반복
             InvitationCode invitationCode = InvitationCode.builder()
                     .code(newCode).tutoringId(tutoring.getId()).role(role).build();
             invitationCodeRepository.saveAndFlush(invitationCode);
@@ -246,6 +247,7 @@ public class TutoringService {
         User user = userOptional.get();
         if (user.getRole() == Role.TUTOR) {
             List<Tutoring> tutoringList = tutoringRepository.findAllByTutorId(user.getId());
+            if (tutoringList.isEmpty()) return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_TUTORING.getMsg()));
             List<TutoringInfoResponseDTO.Tutor> tutoringInfos = tutoringList.stream().map(t -> {
                 TutoringInfoResponseDTO.Tutor DTOTutor = TutoringInfoResponseDTO.Tutor.builder()
                         .tutoringId(t.getId())
@@ -266,6 +268,7 @@ public class TutoringService {
             return ResponseEntity.ok(tutoringInfos);
         } else if (user.getRole() == Role.TUTEE) {
             List<Tutoring> tutoringList = tutoringRepository.findAllByTuteeId(user.getId());
+            if (tutoringList.isEmpty()) return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_TUTORING.getMsg()));
             List<TutoringInfoResponseDTO.Tutee> tutoringInfos = tutoringList.stream().map(t -> {
                 TutoringInfoResponseDTO.Tutee DTOTutee = TutoringInfoResponseDTO.Tutee.builder()
                         .tutoringId(t.getId())
@@ -285,6 +288,7 @@ public class TutoringService {
         }
         else if (user.getRole() == Role.PARENT) {
             List<Tutoring> tutoringList = tutoringRepository.findAllByParentId(user.getId());
+            if (tutoringList.isEmpty()) return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_TUTORING.getMsg()));
             List<TutoringInfoResponseDTO.Parent> tutoringInfos = tutoringList.stream().map(t -> {
                 TutoringInfoResponseDTO.Parent DTOParent = TutoringInfoResponseDTO.Parent.builder()
                         .tutoringId(t.getId())

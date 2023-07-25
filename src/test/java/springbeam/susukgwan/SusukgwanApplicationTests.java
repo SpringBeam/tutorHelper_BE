@@ -68,11 +68,11 @@ class SusukgwanApplicationTests {
 		}
 		//test 결과 mysql workbench에서는 foreign key constraints 때문에 삭제가 안 되지만, JPA에서 삭제 시 제대로 tutoring과 time 모두 삭제됨.
 	}
-	@Test
-	public void deleteAllByTutorId() {
-		List<Tutoring> tutoringList = tutoringRepository.findAllByTutorId(12L);
-		tutoringRepository.deleteAll(tutoringList);
-	}
+//	@Test
+//	public void deleteAllByTutorId() {
+//		List<Tutoring> tutoringList = tutoringRepository.findAllByTutorId(12L);
+//		tutoringRepository.deleteAll(tutoringList);
+//	}
 
 //	@Test
 //	@Transactional
