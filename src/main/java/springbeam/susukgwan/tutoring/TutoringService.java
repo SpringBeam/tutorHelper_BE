@@ -206,7 +206,8 @@ public class TutoringService {
         }
         tutoringRepository.save(tutoring);
         pushService.approveInvitationNotification(tutoring, user);
-        return ResponseEntity.ok().build();
+        ApproveResponseDTO approveResponseDTO = ApproveResponseDTO.builder().tutoringId(tutoring.getId()).build();
+        return ResponseEntity.ok().body(approveResponseDTO);
     }
     public ResponseEntity<?> withdrawFromTutoring(Long tutoringId) {
         String userIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
