@@ -13,4 +13,5 @@ public class RegisterTutoringDTO {
     private String subject;
     private List<DayTimeDTO> dayTimeList;
     private String startDate;
+    private Long color;
 }

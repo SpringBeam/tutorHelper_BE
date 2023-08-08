@@ -48,10 +48,10 @@ public class ColorService {
         }
         else return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 
-        if (colorSetDTO.getColorId() < 1 || colorSetDTO.getColorId() > 10) {
+        if (colorSetDTO.getColor() < 1 || colorSetDTO.getColor() > 10) {
             return ResponseEntity.badRequest().build();
         }
-        ColorList colorPicked = ColorList.values()[colorSetDTO.getColorId().intValue()];
+        ColorList colorPicked = ColorList.values()[colorSetDTO.getColor().intValue()];
         Optional<Color> colorOptional = colorRepository.findByTutoring(tutoring);
         if (colorOptional.isEmpty()) {
             Color newColor = Color.builder().tutoring(tutoring).build();
