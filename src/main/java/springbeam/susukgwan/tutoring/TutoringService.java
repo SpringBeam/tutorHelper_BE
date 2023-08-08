@@ -26,6 +26,7 @@ import springbeam.susukgwan.subject.Subject;
 import springbeam.susukgwan.subject.SubjectRepository;
 import springbeam.susukgwan.tutoring.color.Color;
 import springbeam.susukgwan.tutoring.color.ColorList;
+import springbeam.susukgwan.tutoring.color.ColorRepository;
 import springbeam.susukgwan.tutoring.dto.*;
 import springbeam.susukgwan.user.Role;
 import springbeam.susukgwan.user.User;
@@ -55,6 +56,8 @@ public class TutoringService {
     @Autowired
     private UserRepository userRepository;
     @Autowired
+    private ColorRepository colorRepository;
+    @Autowired
     private ScheduleService scheduleService;
     @Autowired
     private ReviewService reviewService;
@@ -78,10 +81,19 @@ public class TutoringService {
         Tutoring newTutoring = Tutoring.builder().tutorId(tutorId).startDate(startDate)
                         .subject(subject) // 과목 매핑
                         .build();
+        // 색 설정
+        if (registerTutoringDTO.getColor() < 1 || registerTutoringDTO.getColor() > 10) {
+            return ResponseEntity.badRequest().build();
+        }
+        ColorList colorPicked = ColorList.values()[registerTutoringDTO.getColor().intValue()];
+        Color color = Color.builder().tutoring(newTutoring).tutorColor(colorPicked).tuteeColor(ColorList.c0).build();
+        newTutoring.setColor(color);
         ResponseEntity<?> response = scheduleService.checkRegularScheduleRegistration(newTutoring, registerTutoringDTO.getDayTimeList());
         if (response.getStatusCode() == HttpStatus.OK) {
             // 일정 등록이 가능한 경우
             tutoringRepository.save(newTutoring);
+            colorRepository.save(color);
+
             List<Time> timeListToSave = scheduleService.convertToTimeList(newTutoring, registerTutoringDTO.getDayTimeList());
             timeRepository.saveAllAndFlush(timeListToSave);
             return ResponseEntity.ok().build();
@@ -96,6 +108,18 @@ public class TutoringService {
         Optional<Tutoring> tutoringOptional = tutoringRepository.findByIdAndTutorId(tutoringId, tutorId);
 
         if (tutoringOptional.isPresent()) {
+            // 색 설정
+            if (updateTutoringDTO.getColor() < 1 || updateTutoringDTO.getColor() > 10) {
+                return ResponseEntity.badRequest().build();
+            }
+            ColorList colorPicked = ColorList.values()[updateTutoringDTO.getColor().intValue()];
+            Optional<Color> colorOptional = colorRepository.findByTutoring(tutoringOptional.get());
+            if (colorOptional.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).build();
+            }
+            Color oldColor = colorOptional.get();
+            oldColor.setTutorColor(colorPicked);
+
             // update regular schedule
             ChangeRegularDTO changeRegularDTO = ChangeRegularDTO.builder().tutoringId(tutoringId).dayTimeList(updateTutoringDTO.getDayTimeList()).build();
             // TODO 정규시간 변경에 시작 일자까지 고려? -> api 분리 필요
@@ -104,11 +128,12 @@ public class TutoringService {
                 return response;
             else {
                 // if regular schedule is successfully updated,
-                // set subject and start date.
+                // set subject, start date, color.
                 Tutoring tutoring = tutoringOptional.get();
                 Subject subject = findSubject(updateTutoringDTO.getSubject(), tutorId);
                 tutoring.setSubject(subject);
                 tutoring.setStartDate(LocalDate.parse(updateTutoringDTO.getStartDate()));
+                colorRepository.save(oldColor);
                 tutoringRepository.save(tutoring);
                 return ResponseEntity.ok().build();
             }

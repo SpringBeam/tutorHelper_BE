@@ -13,4 +13,5 @@ public class UpdateTutoringDTO {
     private String subject;
     private String startDate;
     private List<DayTimeDTO> dayTimeList;
+    private Long color;
 }

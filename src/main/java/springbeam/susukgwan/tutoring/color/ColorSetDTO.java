@@ -9,5 +9,5 @@ import lombok.*;
 @NoArgsConstructor
 public class ColorSetDTO {
     private Long tutoringId;
-    private Long colorId; // 1 ~ 10
+    private Long color; // 1 ~ 10
 }
