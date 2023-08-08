@@ -2,6 +2,8 @@ package springbeam.susukgwan.tutoring.dto;
 
 import lombok.*;
 
+import java.util.List;
+
 @Getter
 @Setter
 @Builder
@@ -10,4 +12,5 @@ import lombok.*;
 public class UpdateTutoringDTO {
     private String subject;
     private String startDate;
+    private List<DayTimeDTO> dayTimeList;
 }

@@ -96,12 +96,22 @@ public class TutoringService {
         Optional<Tutoring> tutoringOptional = tutoringRepository.findByIdAndTutorId(tutoringId, tutorId);
 
         if (tutoringOptional.isPresent()) {
-            Tutoring tutoring = tutoringOptional.get();
-            Subject subject = findSubject(updateTutoringDTO.getSubject(), tutorId);
-            tutoring.setSubject(subject);
-            tutoring.setStartDate(LocalDate.parse(updateTutoringDTO.getStartDate()));
-            tutoringRepository.save(tutoring);
-            return ResponseEntity.ok().build();
+            // update regular schedule
+            ChangeRegularDTO changeRegularDTO = ChangeRegularDTO.builder().tutoringId(tutoringId).dayTimeList(updateTutoringDTO.getDayTimeList()).build();
+            // TODO 정규시간 변경에 시작 일자까지 고려? -> api 분리 필요
+            ResponseEntity response = scheduleService.changeRegularSchedule(changeRegularDTO);
+            if (response.getStatusCode() != HttpStatus.OK)
+                return response;
+            else {
+                // if regular schedule is successfully updated,
+                // set subject and start date.
+                Tutoring tutoring = tutoringOptional.get();
+                Subject subject = findSubject(updateTutoringDTO.getSubject(), tutorId);
+                tutoring.setSubject(subject);
+                tutoring.setStartDate(LocalDate.parse(updateTutoringDTO.getStartDate()));
+                tutoringRepository.save(tutoring);
+                return ResponseEntity.ok().build();
+            }
         }
         else {
             return ResponseEntity.notFound().build();
