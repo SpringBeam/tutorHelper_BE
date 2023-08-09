@@ -19,6 +19,7 @@ import springbeam.susukgwan.tutoring.dto.NoteSimpleInfoDTO;
 import springbeam.susukgwan.user.Role;
 import springbeam.susukgwan.user.User;
 import springbeam.susukgwan.user.UserRepository;
+import springbeam.susukgwan.user.UserService;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -44,6 +45,8 @@ public class ScheduleService {
     private RegularRecordRepository regularRecordRepository;
     @Autowired
     private NoteService noteService;
+    @Autowired
+    private UserService userService;
     @Autowired
     private PushService pushService;
 
@@ -572,37 +575,42 @@ public class ScheduleService {
         // Build basic info + scheduleList + noteList
         for (Tutoring tutoring : tutoringList) {
             // set basic info
-            AllScheduleInfoResponseDTO allScheduleInfoResponseDTO = AllScheduleInfoResponseDTO.builder().build();
-            allScheduleInfoResponseDTO.setTutoringId(tutoring.getId());
-            allScheduleInfoResponseDTO.setColor(0);
+            AllScheduleInfoResponseDTO allScheduleInfoResponseDTO = AllScheduleInfoResponseDTO.builder()
+                            .tutoringId(tutoring.getId())
+                                    .subject(tutoring.getSubject().getName())
+                                            .color(0)
+                                                    .personName("")
+                                                            .profileImageUrl("")
+                                                                    .build();
+            // tutor | tutee and parent
             if (requestUser.getRole() == Role.TUTOR) {
+                // set tutee name, image if a tutee exists
                 if (tutoring.getTuteeId() != null && userRepository.findById(tutoring.getTuteeId()).isPresent()) {
                     allScheduleInfoResponseDTO.setPersonName(userRepository.findById(tutoring.getTuteeId()).get().getName());
+                    ResponseEntity response = userService.getProfile(tutoring.getTuteeId());
+                    if (response.getStatusCode() == HttpStatus.OK)
+                        allScheduleInfoResponseDTO.setProfileImageUrl((String) response.getBody());
                 }
                 // set tutor color if exists
                 if (tutoring.getColor() != null) {
                     allScheduleInfoResponseDTO.setColor(tutoring.getColor().getTutorColor().getValue());
                 }
             }
-            else if (requestUser.getRole() == Role.TUTEE) {
+            else {
                 if (userRepository.findById(tutoring.getTutorId()).isPresent()) {
                     allScheduleInfoResponseDTO.setPersonName(userRepository.findById(tutoring.getTutorId()).get().getName());
+                    ResponseEntity response = userService.getProfile(tutoring.getTutorId());
+                    if (response.getStatusCode() == HttpStatus.OK)
+                        allScheduleInfoResponseDTO.setProfileImageUrl((String) response.getBody());
                 }
                 // set tutee color if exists
                 if (tutoring.getColor() != null) {
                     allScheduleInfoResponseDTO.setColor(tutoring.getColor().getTuteeColor().getValue());
                 }
             }
-            else {
-                if (userRepository.findById(tutoring.getTutorId()).isPresent()) {
-                    allScheduleInfoResponseDTO.setPersonName(userRepository.findById(tutoring.getTutorId()).get().getName());
-                }
-            }
-            allScheduleInfoResponseDTO.setSubject(tutoring.getSubject().getName());
+
             // set scheduleList for this tutoring
             // times of the tutoring, scheduleList for the response, cancellations of the month, irregular list of the month
-
-
             List<Cancellation> cancelledList = cancellationRepository.findAllByTutoring(tutoring).stream().filter(c ->
                     (c.getCancelledDateTime().getYear() == targetDate.getYear() &&
                             c.getCancelledDateTime().getMonth() == targetDate.getMonth())
@@ -653,6 +661,78 @@ public class ScheduleService {
             allScheduleInfoResponseDTOList.add(allScheduleInfoResponseDTO);
         }
         return ResponseEntity.ok(allScheduleInfoResponseDTOList);
+    }
+
+    public ResponseEntity<?> getAllScheduleListYearMonthDay(int year, int month, int day) {
+        String userIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
+        Long userId = Long.parseLong(userIdStr);
+        Optional<User> userOptional = userRepository.findById(userId);
+        if (userOptional.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(new ResponseMsg(ResponseMsgList.NO_SUCH_USER_IN_DB.getMsg()));
+        }
+        User user = userOptional.get();
+        LocalDate targetDate = LocalDate.of(year, month, day);
+        String dateStr = Integer.toString(targetDate.getDayOfMonth());
+        List<Tutoring> tutoringList;
+        List<ScheduleListByDayDTO> responseList = new ArrayList<>();
+        if (user.getRole() == Role.TUTOR) {
+            tutoringList = tutoringRepository.findAllByTutorId(user.getId());
+        }
+        else if (user.getRole() == Role.TUTEE) {
+            tutoringList = tutoringRepository.findAllByTuteeId(user.getId());
+        }
+        else if (user.getRole() == Role.PARENT) {
+            tutoringList = tutoringRepository.findAllByParentId(user.getId());
+        }
+        else {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        for (Tutoring tutoring : tutoringList) {
+            // get all schedule list (it considers all regular, irregular, cancel schedules)
+            List<ScheduleInfoResponseDTO> scheduleInfoResponseDTOList = getOnlyScheduleListYearMonth(tutoring, year, month);
+            for (ScheduleInfoResponseDTO scheduleInfoResponseDTO: scheduleInfoResponseDTOList) {
+                // append an item to list if its date is targetDate
+                if (scheduleInfoResponseDTO.getDate().equals(dateStr)) {
+                    ScheduleListByDayDTO scheduleListByDayDTO = ScheduleListByDayDTO.builder()
+                            .tutoringId(tutoring.getId())
+                            .subject(tutoring.getSubject().getName())
+                            .personName("")
+                            .profileImageUrl("")
+                            .color(0)
+                            .startTime(scheduleInfoResponseDTO.getStartTime())
+                            .endTime(scheduleInfoResponseDTO.getEndTime())
+                            .build();
+                    // tutor side setting
+                    if (user.getRole() == Role.TUTOR) {
+                        if (tutoring.getTuteeId()!=null && userRepository.findById(tutoring.getTuteeId()).isPresent()) {
+                            scheduleListByDayDTO.setPersonName(userRepository.findById(tutoring.getTuteeId()).get().getName());
+                            ResponseEntity response = userService.getProfile(tutoring.getTuteeId());
+                            if (response.getStatusCode() == HttpStatus.OK)
+                                scheduleListByDayDTO.setProfileImageUrl((String) response.getBody());
+                        }
+                        // set tutor color if exists
+                        if (tutoring.getColor() != null) {
+                            scheduleListByDayDTO.setColor(tutoring.getColor().getTutorColor().getValue());
+                        }
+                    }
+                    // tutee, parent side setting
+                    else {
+                        if (userRepository.findById(tutoring.getTutorId()).isPresent()) {
+                            scheduleListByDayDTO.setPersonName(userRepository.findById(tutoring.getTutorId()).get().getName());
+                            ResponseEntity response = userService.getProfile(tutoring.getTutorId());
+                            if (response.getStatusCode() == HttpStatus.OK)
+                                scheduleListByDayDTO.setProfileImageUrl((String) response.getBody());
+                        }
+                        // set tutee color if exists
+                        if (tutoring.getColor() != null) {
+                            scheduleListByDayDTO.setColor(tutoring.getColor().getTuteeColor().getValue());
+                        }
+                    }
+                    responseList.add(scheduleListByDayDTO);
+                }
+            }
+        }
+        return ResponseEntity.ok(responseList);
     }
 
     public List<ScheduleInfoResponseDTO> getOnlyScheduleListYearMonth(Tutoring tutoring, int year, int month) {
@@ -717,7 +797,7 @@ public class ScheduleService {
             // 마지막으로 체크한 일수와 시간을 기록하는 변수 둘.
             int i = 0;
             LocalDateTime lastRegularAppliedDateTime = targetDateTime;
-            // 정규시간 모두 조회해서 넣기 (지금이 조회하는 달보다 미래인 경우에만 이러한 조회가 필요)
+            // 정규시간 모두 조회해서 넣기 (조회하는 달의 1일보다 지금이 나중인 경우에만 이러한 조회가 필요)
             if (now.isAfter(targetDateTime)) {
                 // 정규기록 모두 조회
                 List<RegularRecord> regularRecords = regularRecordRepository.findAllByTutoringOrderByAppliedUntilAsc(tutoring)
@@ -738,16 +818,14 @@ public class ScheduleService {
                             if (!targetDateTime.plusDays(i).isBefore(regularRecord.getAppliedUntil())) {
                                 break;
                             }
-                            // 정규기록의 정규일정과 요일이 같고 시작시간 또한 적용시기보다 이전이면 담기
+                            // 정규기록의 정규일정과 요일이 같고 시작시기(날짜, 시간) 또한 적용시기(날짜, 시간)보다 이전이면 담기
                             List<Time> regularRecordTimeList = parseDayTimeString(regularRecord.getDayTimeString(), tutoring);
                             DayOfWeek day = targetDate.getDayOfWeek().plus(i);
                             for (Time time: regularRecordTimeList) {
                                 if (time.getDay().equals(day)) {
                                     // 정규 일시
-                                    // LocalDateTime appliedUntil = regularRecord.getAppliedUntil();
-                                    // LocalDateTime registerCandidate = LocalDateTime.of(targetDate.plusDays(i), time.getStartTime());
-                                    LocalTime appliedUntil = regularRecord.getAppliedUntil().toLocalTime();
-                                    if (time.getStartTime().isBefore(appliedUntil)) {
+                                    LocalDateTime appliedUntil = regularRecord.getAppliedUntil();
+                                    if (LocalDateTime.of(targetDate.plusDays(i), time.getStartTime()).isBefore(appliedUntil)) {
                                         scheduleList.add(ScheduleInfoResponseDTO.builder()
                                                 .date(Integer.toString(i+1))
                                                 .startTime(time.getStartTime().toString())

@@ -49,10 +49,6 @@ public class TutoringController {
     public ResponseEntity getTutoringList() {
         return tutoringService.getTutoringList();
     }
-    @GetMapping("/today")
-    public ResponseEntity getTutoringListToday() {
-        return tutoringService.getTutoringListToday();
-    }
     @GetMapping("/detail/{tutoringId}/{year}/{month}")
     public ResponseEntity getScheduleList(@PathVariable("tutoringId") Long tutoringId, @PathVariable("year") int year, @PathVariable("month") int month) {
         return tutoringService.getTutoringDetail(tutoringId, year, month);
