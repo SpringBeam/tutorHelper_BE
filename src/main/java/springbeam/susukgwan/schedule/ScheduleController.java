@@ -38,6 +38,10 @@ public class ScheduleController {
     public ResponseEntity getAllScheduleList(@PathVariable("year") int year, @PathVariable("month") int month) {
         return scheduleService.getAllScheduleListYearMonth(year, month);
     }
+    @GetMapping("/{year}/{month}/{day}")
+    public ResponseEntity getTutoringListByDay(@PathVariable("year") int year, @PathVariable("month") int month, @PathVariable("day") int day) {
+        return scheduleService.getAllScheduleListYearMonthDay(year, month, day);
+    }
     @PutMapping("")
     public ResponseEntity replaceSchedule(@RequestBody ReplaceScheduleDTO replaceScheduleDTO) {
         return scheduleService.replaceSchedule(replaceScheduleDTO);

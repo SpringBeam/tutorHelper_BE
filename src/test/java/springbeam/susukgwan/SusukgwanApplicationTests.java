@@ -14,10 +14,12 @@ import org.springframework.transaction.annotation.Transactional;
 import springbeam.susukgwan.fcm.FCMService;
 import springbeam.susukgwan.fcm.PushRequest;
 import springbeam.susukgwan.schedule.ScheduleService;
+import springbeam.susukgwan.schedule.dto.ScheduleInfoResponseDTO;
 import springbeam.susukgwan.tutoring.Tutoring;
 import springbeam.susukgwan.tutoring.TutoringRepository;
 import springbeam.susukgwan.tutoring.TutoringService;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -67,6 +69,17 @@ class SusukgwanApplicationTests {
 			tutoringRepository.delete(byId.get());
 		}
 		//test 결과 mysql workbench에서는 foreign key constraints 때문에 삭제가 안 되지만, JPA에서 삭제 시 제대로 tutoring과 time 모두 삭제됨.
+	}
+	@Test
+	@Transactional
+	public void testGetRegularSchedule() {
+		Optional<Tutoring> tutoringOptional = tutoringRepository.findById(31L);
+		Tutoring tutoring = tutoringOptional.get();
+		List<ScheduleInfoResponseDTO> regularScheduleListByYearMonth = scheduleService.getRegularScheduleListByYearMonth(tutoring, LocalDate.of(2023, 8, 1));
+		for (ScheduleInfoResponseDTO scheduleInfoResponseDTO: regularScheduleListByYearMonth) {
+			logger.info(scheduleInfoResponseDTO.getDate());
+		}
+
 	}
 //	@Test
 //	public void deleteAllByTutorId() {

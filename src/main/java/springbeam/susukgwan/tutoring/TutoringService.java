@@ -14,13 +14,11 @@ import springbeam.susukgwan.fcm.PushService;
 import springbeam.susukgwan.note.Note;
 import springbeam.susukgwan.note.NoteService;
 import springbeam.susukgwan.review.ReviewService;
-import springbeam.susukgwan.review.dto.ReviewRequestDTO;
 import springbeam.susukgwan.review.dto.ReviewResponseDTO;
 import springbeam.susukgwan.schedule.ScheduleService;
 import springbeam.susukgwan.schedule.Time;
 import springbeam.susukgwan.schedule.TimeRepository;
 import springbeam.susukgwan.schedule.dto.ChangeRegularDTO;
-import springbeam.susukgwan.schedule.dto.GetScheduleDTO;
 import springbeam.susukgwan.schedule.dto.ScheduleInfoResponseDTO;
 import springbeam.susukgwan.subject.Subject;
 import springbeam.susukgwan.subject.SubjectRepository;
@@ -33,14 +31,11 @@ import springbeam.susukgwan.user.User;
 import springbeam.susukgwan.user.UserRepository;
 import springbeam.susukgwan.user.UserService;
 
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -351,106 +346,7 @@ public class TutoringService {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
     }
-    public ResponseEntity<?> getTutoringListToday() {
-        String userIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
-        Long userId = Long.parseLong(userIdStr);
-        Optional<User> userOptional = userRepository.findById(userId);
-        if (userOptional.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(new ResponseMsg(ResponseMsgList.NO_SUCH_USER_IN_DB.getMsg()));
-        }
-        User user = userOptional.get();
-        LocalDateTime now = LocalDateTime.now();
-        if (user.getRole() == Role.TUTOR) {
-            List<Tutoring> tutoringList = tutoringRepository.findAllByTutorId(user.getId());
-            tutoringList = tutoringList.stream().filter(tutoring -> {
-                List<Time> times = tutoring.getTimes();
-                for (Time time: times) {
-                    if (time.getDay().equals(now.getDayOfWeek()))
-                        return true;
-                }
-                return false;
-            }).toList();
-            List<TutoringInfoResponseDTO.Tutor> tutoringInfos = tutoringList.stream().map(t -> {
-                TutoringInfoResponseDTO.Tutor DTOTutor = TutoringInfoResponseDTO.Tutor.builder()
-                        .tutoringId(t.getId())
-                        .subject(t.getSubject().getName())
-                        .tuteeName("")
-                        .profileImageUrl("")
-                        .build();
-                // 튜터링에 학생이 연결되지 않은 경우에는 null이므로 주의해서 다뤄야 한다.
-                if (t.getTuteeId()!=null && userRepository.findById(t.getTuteeId()).isPresent()) {
-                    DTOTutor.setTuteeName(userRepository.findById(t.getTuteeId()).get().getName());
-                    ResponseEntity response = userService.getProfile(t.getTuteeId());
-                    if (response.getStatusCode() == HttpStatus.OK)
-                        DTOTutor.setProfileImageUrl((String) response.getBody());
-                }
-                // 학생이 없으면 빈 문자열
-                return DTOTutor;
-            }).collect(Collectors.toList());
-            return ResponseEntity.ok(tutoringInfos);
-        } else if (user.getRole() == Role.TUTEE) {
-            List<Tutoring> tutoringList = tutoringRepository.findAllByTuteeId(user.getId());
-            tutoringList = tutoringList.stream().filter(tutoring -> {
-                List<Time> times = tutoring.getTimes();
-                for (Time time: times) {
-                    if (time.getDay().equals(now.getDayOfWeek()))
-                        return true;
-                }
-                return false;
-            }).toList();
-            List<TutoringInfoResponseDTO.Tutee> tutoringInfos = tutoringList.stream().map(t -> {
-                TutoringInfoResponseDTO.Tutee DTOTutee = TutoringInfoResponseDTO.Tutee.builder()
-                        .tutoringId(t.getId())
-                        .subject(t.getSubject().getName())
-                        .tutorName("")
-                        .profileImageUrl("")
-                        .build();
-                if (userRepository.findById(t.getTutorId()).isPresent()) {
-                    DTOTutee.setTutorName(userRepository.findById(t.getTutorId()).get().getName());
-                    ResponseEntity response = userService.getProfile(t.getTutorId());
-                    if (response.getStatusCode() == HttpStatus.OK)
-                        DTOTutee.setProfileImageUrl((String) response.getBody());
-                }
-                return DTOTutee;
-            }).collect(Collectors.toList());
-            return ResponseEntity.ok(tutoringInfos);
-        }
-        else if (user.getRole() == Role.PARENT) {
-            List<Tutoring> tutoringList = tutoringRepository.findAllByParentId(user.getId());
-            tutoringList = tutoringList.stream().filter(tutoring -> {
-                List<Time> times = tutoring.getTimes();
-                for (Time time: times) {
-                    if (time.getDay().equals(now.getDayOfWeek()))
-                        return true;
-                }
-                return false;
-            }).toList();
-            List<TutoringInfoResponseDTO.Parent> tutoringInfos = tutoringList.stream().map(t -> {
-                TutoringInfoResponseDTO.Parent DTOParent = TutoringInfoResponseDTO.Parent.builder()
-                        .tutoringId(t.getId())
-                        .subject(t.getSubject().getName())
-                        .tutorName("")
-                        .tuteeName("")
-                        .profileImageUrl("")
-                        .build();
-                if (userRepository.findById(t.getTutorId()).isPresent()) {
-                    DTOParent.setTutorName(userRepository.findById(t.getTutorId()).get().getName());
-                    ResponseEntity response = userService.getProfile(t.getTutorId());
-                    if (response.getStatusCode() == HttpStatus.OK)
-                        DTOParent.setProfileImageUrl((String) response.getBody());
-                }
-                // 튜터링에 학생이 연결되지 않은 경우에는 null이므로 주의해서 다뤄야 한다.
-                if (t.getTuteeId()!=null && userRepository.findById(t.getTuteeId()).isPresent()) {
-                    DTOParent.setTuteeName(userRepository.findById(t.getTuteeId()).get().getName());
-                }
-                return DTOParent;
-            }).collect(Collectors.toList());
-            return ResponseEntity.ok(tutoringInfos);
-        }
-        else {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-    }
+
     /* get all info for tutoring overview (basic info for tutoring, schedule of month, noteList, assignmentList, reviewList) */
     public ResponseEntity<?> getTutoringDetail(Long tutoringId, int year, int month) {
         // Check whether the request user actually has this tutoring.
