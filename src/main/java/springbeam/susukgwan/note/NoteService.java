@@ -324,4 +324,7 @@ public class NoteService {
         ).toList();
         return noteList;
     }
+    public Optional<Note> noteByTutoringAndDateTime(Tutoring tutoring, LocalDateTime dateTime) {
+        return noteRepository.findByTutoringAndDateTime(tutoring, dateTime);
+    }
 }
