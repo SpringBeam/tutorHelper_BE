@@ -201,10 +201,13 @@ public class ScheduleService {
         DayOfWeek dayWant = dateWant.getDayOfWeek();
         LocalTime startTimeWant = LocalTime.parse(replaceScheduleDTO.getStartTimeWant(), DateTimeFormatter.ISO_LOCAL_TIME);
         LocalTime endTimeWant = LocalTime.parse(replaceScheduleDTO.getEndTimeWant(), DateTimeFormatter.ISO_LOCAL_TIME);
+        LocalTime startTime = LocalTime.parse(replaceScheduleDTO.getStartTime(), DateTimeFormatter.ISO_LOCAL_TIME);
         for (Tutoring tutoring: tutoringList) {
+
             // if the dateTime is preoccupied by a certain regular time, return that time.
             Time time = isPreoccupiedDateTime(tutoring, dateWant, dayWant, startTimeWant, endTimeWant);
-            if (time != null) {
+            // if there is a preoccupied time, and it is not a time to replace with.
+            if (time != null && !time.getStartTime().equals(startTime)) {
                 String tuteeName = "";
                 // get one's name if tutee is registered
                 if (tutoring.getTuteeId()!=null && userRepository.findById(tutoring.getTuteeId()).isPresent()) {
@@ -219,8 +222,13 @@ public class ScheduleService {
         // check all irregular times
         List<Irregular> irregularList = irregularRepository.findAllByTutorId(tutorId);
         for (Irregular irregular: irregularList) {
+            // 변경 요청일정은 제외
+
+            // if there is a preoccupied irregular schedule between those times,
+            // and it is not an original irregular time to replace with
             if (dateWant.isEqual(irregular.getDate()) &&
-                    isOverlapped(startTimeWant, endTimeWant, irregular.getStartTime(), irregular.getEndTime()))
+                    isOverlapped(startTimeWant, endTimeWant, irregular.getStartTime(), irregular.getEndTime()) &&
+                        !irregular.getStartTime().equals(startTime))
             {
                 String tuteeName = "";
                 Tutoring overlappedTutoring = irregular.getTutoring(); // tutoring 존재 x의 경우는 일단 무시 tutoring 삭제 시 정규취소, irregular 취소 모두 삭제되도록 해야 됨.
@@ -239,13 +247,13 @@ public class ScheduleService {
 
         // find original schedule to cancel
 
-        // 변경대상 날짜(date, startTime, ... 위의 dateWant 등과는 다름)가 정규시간인지 아닌지 확인하는 것
+        // 변경대상 날짜(date, startTime, ... dateWant 등과는 다름)가 정규시간인지 아닌지 확인하는 것
         // check if the cancellation is about regular schedule of the tutoring
         // ... and if it is, save new schedule and delete old one.
         List<Time> timeList = targetTutoring.getTimes();
         LocalDate date = LocalDate.parse(replaceScheduleDTO.getDate(), DateTimeFormatter.ISO_DATE);
         DayOfWeek day = date.getDayOfWeek();
-        LocalTime startTime = LocalTime.parse(replaceScheduleDTO.getStartTime(), DateTimeFormatter.ISO_LOCAL_TIME);
+
         // 과거의 일정에 대한 취소 요청이면 과거정규기록이 적용되는 시간대일 수 있음. -> 존재하면 적용
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime startDateTime = LocalDateTime.of(date, startTime);
@@ -701,7 +709,11 @@ public class ScheduleService {
                             .color(0)
                             .startTime(scheduleInfoResponseDTO.getStartTime())
                             .endTime(scheduleInfoResponseDTO.getEndTime())
+                            .noteId(0L)
                             .build();
+                    LocalDateTime tutoringTime = LocalDateTime.of(targetDate, LocalTime.parse(scheduleInfoResponseDTO.getStartTime()));
+                    Optional<Note> noteOptional = noteService.noteByTutoringAndDateTime(tutoring, tutoringTime);
+                    noteOptional.ifPresent(note -> scheduleListByDayDTO.setNoteId(note.getId()));
                     // tutor side setting
                     if (user.getRole() == Role.TUTOR) {
                         if (tutoring.getTuteeId()!=null && userRepository.findById(tutoring.getTuteeId()).isPresent()) {

@@ -6,6 +6,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import springbeam.susukgwan.tutoring.Tutoring;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,4 +24,5 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
     )
     Long GetTutorIdOfNote(@Param(value = "noteId") Long noteId);
     List<Note> findAllByTutoring(Tutoring tutoring);
+    Optional<Note> findByTutoringAndDateTime(Tutoring tutoring, LocalDateTime dateTime);
 }

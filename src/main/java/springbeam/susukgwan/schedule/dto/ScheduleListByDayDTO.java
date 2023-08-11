@@ -15,4 +15,5 @@ public class ScheduleListByDayDTO {
     private int color;
     private String startTime;
     private String endTime;
+    private Long noteId;
 }
