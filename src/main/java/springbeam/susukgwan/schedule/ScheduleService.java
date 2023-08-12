@@ -712,7 +712,7 @@ public class ScheduleService {
                             .noteId(0L)
                             .build();
                     LocalDateTime tutoringTime = LocalDateTime.of(targetDate, LocalTime.parse(scheduleInfoResponseDTO.getStartTime()));
-                    Optional<Note> noteOptional = noteService.noteByTutoringAndDateTime(tutoring, tutoringTime);
+                    Optional<Note> noteOptional = noteService.noteByTutoringAndTutoringTime(tutoring, tutoringTime);
                     noteOptional.ifPresent(note -> scheduleListByDayDTO.setNoteId(note.getId()));
                     // tutor side setting
                     if (user.getRole() == Role.TUTOR) {

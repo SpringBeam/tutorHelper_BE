@@ -24,5 +24,5 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
     )
     Long GetTutorIdOfNote(@Param(value = "noteId") Long noteId);
     List<Note> findAllByTutoring(Tutoring tutoring);
-    Optional<Note> findByTutoringAndDateTime(Tutoring tutoring, LocalDateTime dateTime);
+    Optional<Note> findByTutoringAndTutoringTime(Tutoring tutoring, LocalDateTime tutoringTime);
 }
