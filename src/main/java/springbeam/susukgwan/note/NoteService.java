@@ -247,7 +247,7 @@ public class NoteService {
         }
 
         pushService.noteCreateNotification(note);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(note.getId());
     }
 
     /* 수업일지 보기 */
