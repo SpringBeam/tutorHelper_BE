@@ -20,7 +20,6 @@ import springbeam.susukgwan.user.Role;
 import springbeam.susukgwan.user.User;
 import springbeam.susukgwan.user.UserRepository;
 import springbeam.susukgwan.user.UserService;
-
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -282,6 +281,7 @@ public class ScheduleService {
                     irregularRepository.save(newIrregular);
                     cancellationRepository.save(newCancellation);
                     if (!noPushFlag) pushService.replaceScheduleNotification(targetTutoring, replaceScheduleDTO);
+                    log.info("Number of threads " + Thread.activeCount());
                     return ResponseEntity.ok().build();
                 }
             }
@@ -294,6 +294,8 @@ public class ScheduleService {
                 irregularRepository.save(newIrregular);
                 irregularRepository.delete(irregular);
                 if (!noPushFlag) pushService.replaceScheduleNotification(targetTutoring, replaceScheduleDTO);
+                System.out.println("Number of threads " + Thread.activeCount());
+                log.info("Number of threads " + Thread.activeCount());
                 return ResponseEntity.ok().build();
             }
         }
