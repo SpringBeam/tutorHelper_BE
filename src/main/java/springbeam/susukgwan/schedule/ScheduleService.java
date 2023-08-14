@@ -281,7 +281,6 @@ public class ScheduleService {
                     irregularRepository.save(newIrregular);
                     cancellationRepository.save(newCancellation);
                     if (!noPushFlag) pushService.replaceScheduleNotification(targetTutoring, replaceScheduleDTO);
-                    log.info("Number of threads " + Thread.activeCount());
                     return ResponseEntity.ok().build();
                 }
             }
@@ -294,8 +293,6 @@ public class ScheduleService {
                 irregularRepository.save(newIrregular);
                 irregularRepository.delete(irregular);
                 if (!noPushFlag) pushService.replaceScheduleNotification(targetTutoring, replaceScheduleDTO);
-                System.out.println("Number of threads " + Thread.activeCount());
-                log.info("Number of threads " + Thread.activeCount());
                 return ResponseEntity.ok().build();
             }
         }
