@@ -44,4 +44,9 @@ public class ReviewController {
     public ResponseEntity<?> listReview (@Valid @RequestBody ReviewRequestDTO.ListRequest listReview){
         return reviewService.reviewList(listReview);
     }
+
+    @PostMapping("/multi-delete")
+    public ResponseEntity<?> multiDeleteReview(@Valid @RequestBody ReviewRequestDTO.MultiDelete deleteReviewList) {
+        return reviewService.multiDeleteReview(deleteReviewList);
+    }
 }
