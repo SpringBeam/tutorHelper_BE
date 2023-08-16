@@ -16,7 +16,10 @@ import springbeam.susukgwan.tag.TagRepository;
 import springbeam.susukgwan.tutoring.Tutoring;
 import springbeam.susukgwan.tutoring.TutoringRepository;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -56,7 +59,25 @@ public class ReviewService {
 //                reviewRepository.save(review);
                 return ResponseEntity.ok(review);
             } else {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_NOTE.getMsg()));
+                // 수업일지가 하나도 존재하지 않는다면 수업 첫시작날 자정으로 수업일지 자동 생성
+                Note newNote = Note.builder()
+                        .dateTime(LocalDateTime.now(ZoneId.of("Asia/Seoul")))
+                        .tutoringTime(tutoring.get().getStartDate().atTime(0,0))
+                        .tutoring(tutoring.get())
+                        .progress(".")
+                        .build();
+//                noteRepository.save(newNote);
+                Review review = Review.builder()
+                        .body(createReview.getBody())
+                        .isCompleted(false)
+                        .note(newNote)
+                        .tag(tag.get())
+                        .build();
+                HashMap<String, Object> map = new HashMap<String, Object>();
+                map.put("review", review);
+                map.put("note", newNote);
+                return ResponseEntity.status(HttpStatus.CREATED).body(map);
+//                return ResponseEntity.ok(review);
             }
         } else if (tutoring.isPresent() && tag.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_TAG.getMsg()));
