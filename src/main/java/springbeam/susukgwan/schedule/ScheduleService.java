@@ -20,7 +20,6 @@ import springbeam.susukgwan.user.Role;
 import springbeam.susukgwan.user.User;
 import springbeam.susukgwan.user.UserRepository;
 import springbeam.susukgwan.user.UserService;
-
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
