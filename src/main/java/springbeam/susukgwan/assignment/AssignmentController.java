@@ -26,7 +26,7 @@ public class AssignmentController {
         if (result.getStatusCode() == HttpStatus.OK) {
             Assignment assignment = (Assignment) result.getBody();
             assignmentRepository.save(assignment); // DB에 저장
-            return ResponseEntity.ok().build(); // 성공일때는 body 빼고 다시 반환
+            return ResponseEntity.ok(assignment.getId()); // 성공일때는 body 빼고 ID만 넣고 다시 반환
         }
         return result; // 오류코드일때는 그대로 반환
     }
@@ -69,5 +69,10 @@ public class AssignmentController {
     @PostMapping("/list")
     public ResponseEntity<?> listAssignment (@Valid @RequestBody AssignmentRequestDTO.ListRequest listAssignment) {
         return assignmentService.listAssignment(listAssignment);
+    }
+
+    @PostMapping("/multi-delete")
+    public ResponseEntity<?> multiDeleteAssignment(@Valid @RequestBody AssignmentRequestDTO.MultiDelete deleteAssignmentList) {
+        return assignmentService.multiDeleteAssignment(deleteAssignmentList);
     }
 }

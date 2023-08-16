@@ -20,7 +20,7 @@ public class ReviewController {
         if (result.getStatusCode() == HttpStatus.OK) {
             Review review = (Review) result.getBody();
             reviewRepository.save(review); // DB에 저장
-            return ResponseEntity.ok().build(); // 성공일때는 body 빼고 다시 반환
+            return ResponseEntity.ok(review.getId()); // 성공일때는 body 빼고 ID만 넣고 다시 반환
         }
         return result; // 오류코드일때는 그대로 반환
     }

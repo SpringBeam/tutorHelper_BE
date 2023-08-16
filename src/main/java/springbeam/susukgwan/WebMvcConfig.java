@@ -35,7 +35,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .excludePathPatterns("/api/review", "/api/review/list", "/api/review/multi-delete")
                 .addPathPatterns("/api/review/**");
         registry.addInterceptor(assignmentAuthInterceptor)
-                .excludePathPatterns("/api/assignment", "/api/assignment/list")
+                .excludePathPatterns("/api/assignment", "/api/assignment/list", "/api/assignment/multi-delete")
                 .addPathPatterns("/api/assignment/*", "/api/assignment/*/check");
         registry.addInterceptor(submitTuteeInterceptor)
                 .addPathPatterns("/api/assignment/*/submit", "/api/assignment/submit/*");

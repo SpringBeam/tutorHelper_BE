@@ -69,7 +69,7 @@ public class SubmitService {
 
         submitRepository.save(submit);
         pushService.assignmentSubmitNotification(assignment, Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName()));
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(submit.getId());
     }
 
     /* 숙제 인증피드 삭제 */

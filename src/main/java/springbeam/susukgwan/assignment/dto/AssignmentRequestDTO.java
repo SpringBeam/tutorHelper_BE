@@ -50,4 +50,11 @@ public class AssignmentRequestDTO {
         @NotNull
         private Long tutoringId;
     }
+
+    @Getter
+    @Setter
+    public static class MultiDelete {
+        @NotNull
+        private List<Long> assignmentIdList;
+    }
 }

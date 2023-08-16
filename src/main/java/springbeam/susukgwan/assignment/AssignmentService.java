@@ -208,4 +208,30 @@ public class AssignmentService {
         List<AssignmentResponseDTO> responseList = assignmentList.stream().map(o->new AssignmentResponseDTO(o)).collect(Collectors.toList());
         return responseList;
     }
+
+    /* 숙제 여러개 삭제 */
+    public ResponseEntity<?> multiDeleteAssignment(AssignmentRequestDTO.MultiDelete deleteAssignmentList) {
+        Long userId = Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
+        List<Long> deleteAssignmentIdList = new ArrayList<>();
+
+        // 제대로 된 요청만 걸러내기
+        for (Long assignmentId : deleteAssignmentList.getAssignmentIdList()) {
+            Optional<Assignment> assignment = assignmentRepository.findById(assignmentId);
+            if (assignment.isPresent()) { // 존재하는 숙제만 고려 (존재하지 않는 숙제는 무시)
+                Long tutorIdOfAssignment = assignmentRepository.GetTutorIdOfAssignment(assignmentId);
+                if (userId == tutorIdOfAssignment) {
+                    deleteAssignmentIdList.add(assignmentId);
+                } else {
+                    // 권한이 없는 숙제 삭제하려고 하면 에러처리
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseMsg(ResponseMsgList.NOT_AUTHORIZED.getMsg()));
+                }
+            }
+        }
+
+        // 권한 있는 & 존재하는 항목들 한번에 삭제
+        for (Long assignmentId : deleteAssignmentIdList) {
+            assignmentRepository.deleteById(assignmentId);
+        }
+        return ResponseEntity.ok().build();
+    }
 }

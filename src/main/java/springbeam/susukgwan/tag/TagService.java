@@ -45,7 +45,7 @@ public class TagService {
                     .subject(subject)
                     .build();
             tagRepository.save(tag);
-            return ResponseEntity.ok().build();
+            return ResponseEntity.ok(tag.getId());
         } else {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseMsg(ResponseMsgList.TAG_CONSTRAINTS.getMsg()));
         }
