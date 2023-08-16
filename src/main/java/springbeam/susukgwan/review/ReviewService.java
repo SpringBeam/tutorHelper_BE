@@ -161,4 +161,30 @@ public class ReviewService {
         List<ReviewResponseDTO> responseList = reviewList.stream().map(o->new ReviewResponseDTO(o)).collect(Collectors.toList());
         return responseList;
     }
+
+    /* 복습항목 여러개 삭제 */
+    public ResponseEntity<?> multiDeleteReview(ReviewRequestDTO.MultiDelete deleteReviewList) {
+        Long userId = Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
+        List<Long> deleteReviewIdList = new ArrayList<>();
+
+        // 제대로 된 요청만 걸러내기
+        for (Long reviewId : deleteReviewList.getReviewIdList()) {
+            Optional<Review> review = reviewRepository.findById(reviewId);
+            if (review.isPresent()) { // 존재하는 복습항목만 고려 (존재하지 않는건 무시)
+                Long tutorIdOfReview = reviewRepository.GetTutorIdOfReview(reviewId);
+                if (userId == tutorIdOfReview) {
+                    deleteReviewIdList.add(reviewId);
+                } else {
+                    // 권한이 없는 복습항목 삭제하려고 하면 에러처리
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseMsg(ResponseMsgList.NOT_AUTHORIZED.getMsg()));
+                }
+            }
+        }
+
+        // 권한 있는 & 존재하는 항목들 한번에 삭제
+        for (Long reviewId : deleteReviewIdList) {
+            reviewRepository.deleteById(reviewId);
+        }
+        return ResponseEntity.ok().build();
+    }
 }

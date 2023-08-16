@@ -4,6 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
+import java.util.List;
+
 public class ReviewRequestDTO { /* Review 요청 DTO 모음 */
 
     @Getter
@@ -36,5 +38,12 @@ public class ReviewRequestDTO { /* Review 요청 DTO 모음 */
     public static class ListRequest { /* Review 리스트 */
         @NotNull
         private Long tutoringId;
+    }
+
+    @Getter
+    @Setter
+    public static class MultiDelete { /* Review 여러개 삭제 */
+        @NotNull
+        private List<Long> reviewIdList;
     }
 }
