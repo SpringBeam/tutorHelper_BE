@@ -18,7 +18,10 @@ import springbeam.susukgwan.tutoring.Tutoring;
 import springbeam.susukgwan.tutoring.TutoringRepository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -47,24 +50,24 @@ public class AssignmentService {
         /* End */
 
             Optional<Note> note = noteRepository.findFirst1ByTutoringOrderByDateTimeDesc(tutoring.get());
-            if (note.isPresent()) {
-                // 목표 제출횟수 계산
-                LocalDate startDate = createAssignment.getStartDate();
-                LocalDate endDate = createAssignment.getEndDate();
-                List<LocalDate> dateList = startDate.datesUntil(endDate.plusDays(1)).collect(Collectors.toList());
-                Long goalCount = 0L;
+            // 목표 제출횟수 계산
+            LocalDate startDate = createAssignment.getStartDate();
+            LocalDate endDate = createAssignment.getEndDate();
+            List<LocalDate> dateList = startDate.datesUntil(endDate.plusDays(1)).collect(Collectors.toList());
+            Long goalCount = 0L;
 
-                if (createAssignment.getFrequency().isEmpty()) {
-                    goalCount = 1L;
-                }
-                else {
-                    for (LocalDate d : dateList) {
-                        if (createAssignment.getFrequency().contains(Long.valueOf(d.getDayOfWeek().getValue()))) {
-                            goalCount += 1;
-                        }
+            if (createAssignment.getFrequency().isEmpty()) {
+                goalCount = 1L;
+            }
+            else {
+                for (LocalDate d : dateList) {
+                    if (createAssignment.getFrequency().contains(Long.valueOf(d.getDayOfWeek().getValue()))) {
+                        goalCount += 1;
                     }
                 }
+            }
 
+            if (note.isPresent()) { // 수업일지 있을 때
                 Assignment assignment = Assignment.builder()
                         .body(createAssignment.getBody())
                         .startDate(createAssignment.getStartDate())
@@ -78,8 +81,28 @@ public class AssignmentService {
                         .build();
 //                assignmentRepository.save(assignment);
                 return ResponseEntity.ok(assignment);
-            } else {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_NOTE.getMsg()));
+            } else { // 없을 때 수업 첫시작날 자정으로 수업일지 자동 생성
+                Note newNote = Note.builder()
+                        .dateTime(LocalDateTime.now(ZoneId.of("Asia/Seoul")))
+                        .tutoringTime(tutoring.get().getStartDate().atTime(0,0))
+                        .tutoring(tutoring.get())
+                        .progress(".")
+                        .build();
+                Assignment assignment = Assignment.builder()
+                        .body(createAssignment.getBody())
+                        .startDate(createAssignment.getStartDate())
+                        .endDate(createAssignment.getEndDate())
+                        .frequency(createAssignment.getFrequency())
+                        .amount(createAssignment.getAmount())
+                        .isCompleted(false)
+                        .note(newNote)
+                        .count(0L)
+                        .goalCount(goalCount)
+                        .build();
+                HashMap<String, Object> map = new HashMap<String, Object>();
+                map.put("assignment", assignment);
+                map.put("note", newNote);
+                return ResponseEntity.status(HttpStatus.CREATED).body(map);
             }
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_TUTORING.getMsg()));
