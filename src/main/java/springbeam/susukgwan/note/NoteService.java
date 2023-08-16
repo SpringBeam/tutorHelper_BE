@@ -3,6 +3,7 @@ package springbeam.susukgwan.note;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -153,25 +154,19 @@ public class NoteService {
                 r.setTutoringId(createNote.getTutoringId()); // 요청에 tutoringId 추가
 
                 ResponseEntity createReviewResponse = reviewService.createReview(r); // review 생성
-                if (createReviewResponse.getStatusCode() != HttpStatus.OK) {
-                    // review 생성 중에 오류 생김
-                    // 1-1. 근데 그 오류가 수업일지가 없다는 오류일때
-                    if (((ResponseMsg) createReviewResponse.getBody()).getMsg().equals(ResponseMsgList.NOT_EXIST_NOTE.getMsg())){
-                        Review savedReview = Review.builder()
-                                .body(r.getBody())
-                                .isCompleted(false)
-                                .note(note) // 이번에 만들 수업일지 추가
-                                .tag(tagRepository.findById(r.getTagId()).get())
-                                .build();
-                        createReviewList.add(savedReview);
-                    } else { // 1-2. 다른 오류일때는 그냥 끝내버림
-                        return createReviewResponse;
-                    }
-                } else {
-                    // review 생성 가능 => 생성된 Review 받아옴
+                HttpStatusCode statusCode = createReviewResponse.getStatusCode();
+                if (statusCode == HttpStatus.OK) { // 정상 생성 가능
                     Review savedReview = (Review) createReviewResponse.getBody();
                     savedReview.setNote(note);
                     createReviewList.add(savedReview); // 추가 -> 나중에 리스트 한번에 저장
+                }
+                else if (statusCode == HttpStatus.CREATED) { // 정상 생성 가능 but 수업일지가 하나도 없었어서 같이 넘어옴
+                    Review savedReview = (Review)(((HashMap<String, Object>) createReviewResponse.getBody()).get("review"));
+                    savedReview.setNote(note);
+                    createReviewList.add(savedReview);
+                }
+                else { // 불가능 (종료)
+                    return createReviewResponse;
                 }
             }
         }
@@ -204,29 +199,19 @@ public class NoteService {
 
                 a.setTutoringId(createNote.getTutoringId()); // 요청에 tutoringId 추가
                 ResponseEntity createAssignmentResponse = assignmentService.createAssignment(a); // assignment 생성
-                if (createAssignmentResponse.getStatusCode() != HttpStatus.OK) {
-                    // assignment 생성 중에 오류 생김
-                    if (((ResponseMsg) createAssignmentResponse.getBody()).getMsg().equals(ResponseMsgList.NOT_EXIST_NOTE.getMsg())) {
-                        // 1-1. 수업일지 없음
-                        Assignment savedAssignment = Assignment.builder()
-                                .body(a.getBody())
-                                .startDate(a.getStartDate())
-                                .endDate(a.getEndDate())
-                                .frequency(a.getFrequency())
-                                .amount(a.getAmount())
-                                .isCompleted(false)
-                                .note(note)
-                                .build();
-                        createAssignmentList.add(savedAssignment);
-                    } else {
-                        // 1-2. 다른 오류
-                        return createAssignmentResponse;
-                    }
-                } else {
-                    // assignment 생성 가능 => 생성된 Assignment 받아옴
+                HttpStatusCode statusCode2 = createAssignmentResponse.getStatusCode();
+                if (statusCode2 == HttpStatus.OK) { // 정상 생성 가능
                     Assignment savedAssignment = (Assignment) createAssignmentResponse.getBody();
                     savedAssignment.setNote(note);
                     createAssignmentList.add(savedAssignment); // 추가 -> 나중에 리스트 한번에 저장
+                }
+                else if (statusCode2 == HttpStatus.CREATED) { // 정상 생성 가능 but 수업일지가 하나도 없었어서 같이 넘어옴
+                    Assignment savedAssignment = (Assignment) (((HashMap<String, Object>) createAssignmentResponse.getBody()).get("assignment"));
+                    savedAssignment.setNote(note);
+                    createAssignmentList.add(savedAssignment); // 추가 -> 나중에 리스트 한번에 저장
+                }
+                else { // 불가능 (종료)
+                    return createAssignmentResponse;
                 }
             }
         }
