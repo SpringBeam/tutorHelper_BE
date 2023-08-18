@@ -745,7 +745,77 @@ public class ScheduleService {
         }
         return ResponseEntity.ok(responseList);
     }
-
+    public ResponseEntity<?> getAllScheduleListTutoringYearMonthDay(Long tutoringId, int year, int month, int day) {
+        String userIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
+        Long userId = Long.parseLong(userIdStr);
+        Optional<User> userOptional = userRepository.findById(userId);
+        if (userOptional.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(new ResponseMsg(ResponseMsgList.NO_SUCH_USER_IN_DB.getMsg()));
+        }
+        User user = userOptional.get();
+        Optional<Tutoring> tutoringOptional = tutoringRepository.findById(tutoringId);
+        if (tutoringOptional.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NO_SUCH_TUTORING.getMsg()));
+        }
+        Tutoring tutoring = tutoringOptional.get();
+        List<Long> users = new ArrayList<>();
+        users.add(tutoring.getTutorId());
+        users.add(tutoring.getTuteeId());
+        users.add(tutoring.getParentId());
+        if (!users.contains(userId)) { // 해당 수업의 선생님, 학생, 학부모만 접근 가능
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ResponseMsg(ResponseMsgList.NOT_AUTHORIZED.getMsg()));
+        }
+        LocalDate targetDate = LocalDate.of(year, month, day);
+        String dateStr = Integer.toString(targetDate.getDayOfMonth());
+        List<ScheduleInfoResponseDTO> scheduleInfoResponseDTOList = getOnlyScheduleListYearMonth(tutoring, year, month);
+        List<ScheduleListByDayDTO> responseList = new ArrayList<>();
+        for (ScheduleInfoResponseDTO scheduleInfoResponseDTO: scheduleInfoResponseDTOList) {
+            // append an item to list if its date is targetDate
+            if (scheduleInfoResponseDTO.getDate().equals(dateStr)) {
+                ScheduleListByDayDTO scheduleListByDayDTO = ScheduleListByDayDTO.builder()
+                        .tutoringId(tutoring.getId())
+                        .subject(tutoring.getSubject().getName())
+                        .personName("")
+                        .profileImageUrl("")
+                        .color(0)
+                        .startTime(scheduleInfoResponseDTO.getStartTime())
+                        .endTime(scheduleInfoResponseDTO.getEndTime())
+                        .noteId(0L)
+                        .build();
+                LocalDateTime tutoringTime = LocalDateTime.of(targetDate, LocalTime.parse(scheduleInfoResponseDTO.getStartTime()));
+                Optional<Note> noteOptional = noteService.noteByTutoringAndTutoringTime(tutoring, tutoringTime);
+                noteOptional.ifPresent(note -> scheduleListByDayDTO.setNoteId(note.getId()));
+                // tutor side setting
+                if (user.getRole() == Role.TUTOR) {
+                    if (tutoring.getTuteeId()!=null && userRepository.findById(tutoring.getTuteeId()).isPresent()) {
+                        scheduleListByDayDTO.setPersonName(userRepository.findById(tutoring.getTuteeId()).get().getName());
+                        ResponseEntity response = userService.getProfile(tutoring.getTuteeId());
+                        if (response.getStatusCode() == HttpStatus.OK)
+                            scheduleListByDayDTO.setProfileImageUrl((String) response.getBody());
+                    }
+                    // set tutor color if exists
+                    if (tutoring.getColor() != null) {
+                        scheduleListByDayDTO.setColor(tutoring.getColor().getTutorColor().getValue());
+                    }
+                }
+                // tutee, parent side setting
+                else {
+                    if (userRepository.findById(tutoring.getTutorId()).isPresent()) {
+                        scheduleListByDayDTO.setPersonName(userRepository.findById(tutoring.getTutorId()).get().getName());
+                        ResponseEntity response = userService.getProfile(tutoring.getTutorId());
+                        if (response.getStatusCode() == HttpStatus.OK)
+                            scheduleListByDayDTO.setProfileImageUrl((String) response.getBody());
+                    }
+                    // set tutee color if exists
+                    if (tutoring.getColor() != null) {
+                        scheduleListByDayDTO.setColor(tutoring.getColor().getTuteeColor().getValue());
+                    }
+                }
+                responseList.add(scheduleListByDayDTO);
+            }
+        }
+        return ResponseEntity.ok(responseList);
+    }
     public List<ScheduleInfoResponseDTO> getOnlyScheduleListYearMonth(Tutoring tutoring, int year, int month) {
         // get LocalDateTime object of the corresponding year and month
         LocalDate targetDate = LocalDate.of(year, month, 1);

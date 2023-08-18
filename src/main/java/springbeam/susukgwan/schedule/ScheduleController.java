@@ -42,6 +42,10 @@ public class ScheduleController {
     public ResponseEntity getTutoringListByDay(@PathVariable("year") int year, @PathVariable("month") int month, @PathVariable("day") int day) {
         return scheduleService.getAllScheduleListYearMonthDay(year, month, day);
     }
+    @GetMapping("{tutoringId}/{year}/{month}/{day}")
+    public ResponseEntity getTutoringListByTutoringAndDay(@PathVariable("tutoringId") Long tutoringId, @PathVariable("year") int year, @PathVariable("month") int month, @PathVariable("day") int day) {
+        return scheduleService.getAllScheduleListTutoringYearMonthDay(tutoringId, year, month, day);
+    }
     @PutMapping("")
     public ResponseEntity replaceSchedule(@RequestBody ReplaceScheduleDTO replaceScheduleDTO) {
         return scheduleService.replaceSchedule(replaceScheduleDTO);
