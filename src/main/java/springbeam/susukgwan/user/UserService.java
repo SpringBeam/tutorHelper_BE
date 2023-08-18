@@ -114,7 +114,7 @@ public class UserService {
             String originalFilename = multipartFile.getOriginalFilename();
             String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
             String fileName = "profile/profileImg-" + userId + extension;
-            s3Service.upload(multipartFile, fileName);
+            s3Service.uploadPublic(multipartFile, fileName);
             user.setProfileImg(fileName);
             userRepository.save(user);
             return ResponseEntity.ok().build();

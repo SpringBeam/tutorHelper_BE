@@ -3,8 +3,10 @@ package springbeam.susukgwan;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.PutObjectRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -84,5 +86,16 @@ public class S3Service {
     /* public 객체 url 반환 */
     public String getPublicURL (String keyName) {
         return amazonS3.getUrl(bucket, keyName).toString();
+    }
+
+    /* public 객체 업로드 */
+    public String uploadPublic(MultipartFile multipartFile, String s3FileName) throws IOException {
+        ObjectMetadata objMeta = new ObjectMetadata();
+        objMeta.setContentLength(multipartFile.getInputStream().available());
+        amazonS3.putObject(
+                new PutObjectRequest(bucket, s3FileName, multipartFile.getInputStream(), objMeta)
+                        .withCannedAcl(CannedAccessControlList.PublicRead)
+        );
+        return URLDecoder.decode(amazonS3.getUrl(bucket, s3FileName).toString(), "utf-8"); // url에 한글&특수문자가 포함되어있을 경우 깨짐 방지
     }
 }
