@@ -414,8 +414,8 @@ public class TutoringService {
         List<Note> noteList = noteService.noteListForDetail(tutoring, year, month);
         List<NoteSimpleInfoDTO> noteSimpleInfoDTOS = noteList.stream().map(n -> NoteSimpleInfoDTO.builder()
                 .noteId(n.getId())
-                .date(String.valueOf(n.getDateTime().getDayOfMonth()))
-                .startTime(n.getDateTime().toLocalTime().toString())
+                .date(String.valueOf(n.getTutoringTime().getDayOfMonth()))
+                .startTime(n.getTutoringTime().toLocalTime().toString())
                 .build()).toList();
         tutoringDetailDTO.setNoteList(noteSimpleInfoDTOS);
 
