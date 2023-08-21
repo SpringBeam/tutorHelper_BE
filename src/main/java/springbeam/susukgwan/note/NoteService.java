@@ -305,7 +305,7 @@ public class NoteService {
         LocalDate targetDate = LocalDate.of(year, month, 1);
         List<Note> noteList = noteRepository.findAllByTutoring(tutoring);
         noteList = noteList.stream().filter(n ->
-                (n.getDateTime().getYear() == targetDate.getYear() && n.getDateTime().getMonth() == targetDate.getMonth())
+                (n.getTutoringTime().getYear() == targetDate.getYear() && n.getTutoringTime().getMonth() == targetDate.getMonth())
         ).toList();
         return noteList;
     }

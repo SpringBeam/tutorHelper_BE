@@ -1,6 +1,7 @@
 package springbeam.susukgwan.review;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -11,6 +12,7 @@ import springbeam.susukgwan.note.Note;
 import springbeam.susukgwan.note.NoteRepository;
 import springbeam.susukgwan.review.dto.ReviewRequestDTO;
 import springbeam.susukgwan.review.dto.ReviewResponseDTO;
+import springbeam.susukgwan.schedule.DummyScheduleService;
 import springbeam.susukgwan.tag.Tag;
 import springbeam.susukgwan.tag.TagRepository;
 import springbeam.susukgwan.tutoring.Tutoring;
@@ -31,6 +33,8 @@ public class ReviewService {
     private final TutoringRepository tutoringRepository;
     private final NoteRepository noteRepository;
     private final TagRepository tagRepository;
+    @Autowired
+    private DummyScheduleService dummyScheduleService;
 
     /* 복습항목 추가 */
     public ResponseEntity<?> createReview(ReviewRequestDTO.Create createReview) {
@@ -60,6 +64,8 @@ public class ReviewService {
                 return ResponseEntity.ok(review);
             } else {
                 // 수업일지가 하나도 존재하지 않는다면 수업 첫시작날 자정으로 수업일지 자동 생성
+                // 해당 일정 먼저 생성
+                dummyScheduleService.newDummyIrregularSchedule(tutoring.get(), tutoring.get().getStartDate());
                 Note newNote = Note.builder()
                         .dateTime(LocalDateTime.now(ZoneId.of("Asia/Seoul")))
                         .tutoringTime(tutoring.get().getStartDate().atTime(0,0))
