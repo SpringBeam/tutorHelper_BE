@@ -2,6 +2,7 @@ package springbeam.susukgwan.assignment;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,6 +15,7 @@ import springbeam.susukgwan.assignment.dto.AssignmentResponseDTO;
 import springbeam.susukgwan.assignment.dto.SubmitResponseDTO;
 import springbeam.susukgwan.note.Note;
 import springbeam.susukgwan.note.NoteRepository;
+import springbeam.susukgwan.schedule.DummyScheduleService;
 import springbeam.susukgwan.tutoring.Tutoring;
 import springbeam.susukgwan.tutoring.TutoringRepository;
 
@@ -35,6 +37,8 @@ public class AssignmentService {
     private final NoteRepository noteRepository;
     private final SubmitRepository submitRepository;
     private final S3Service s3Service;
+    @Autowired
+    private DummyScheduleService dummyScheduleService;
 
     /* 숙제 추가 */
     public ResponseEntity<?> createAssignment(AssignmentRequestDTO.Create createAssignment) {
@@ -82,6 +86,8 @@ public class AssignmentService {
 //                assignmentRepository.save(assignment);
                 return ResponseEntity.ok(assignment);
             } else { // 없을 때 수업 첫시작날 자정으로 수업일지 자동 생성
+                // 해당 일정 먼저 생성
+                dummyScheduleService.newDummyIrregularSchedule(tutoring.get(), tutoring.get().getStartDate());
                 Note newNote = Note.builder()
                         .dateTime(LocalDateTime.now(ZoneId.of("Asia/Seoul")))
                         .tutoringTime(tutoring.get().getStartDate().atTime(0,0))
