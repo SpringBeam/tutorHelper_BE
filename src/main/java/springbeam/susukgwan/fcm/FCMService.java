@@ -195,7 +195,7 @@ public class FCMService {
         return AndroidConfig.builder()
                 .setTtl(Duration.ofDays(14).toMillis())
                 .setCollapseKey(topic)
-                .setPriority(AndroidConfig.Priority.NORMAL)
+                .setPriority(AndroidConfig.Priority.HIGH)
                 .setNotification(AndroidNotification.builder()
                         .setSound(NotificationParameter.SOUND.getValue())
                         .setColor(NotificationParameter.COLOR.getValue())

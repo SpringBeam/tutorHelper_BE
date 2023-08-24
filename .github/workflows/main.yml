@@ -40,6 +40,9 @@ jobs:
             cloud.aws.credentials.accessKey
             cloud.aws.credentials.secretKey
             cloud.aws.s3.bucket
+            spring.security.oauth2.client.registration.google.client-id
+            spring.security.oauth2.client.registration.google.client-secret
+            spring.security.oauth2.client.registration.google.redirect-uri
             
           value: |
             ${{ secrets.RDS_URL }}
@@ -52,6 +55,10 @@ jobs:
             ${{ secrets.S3_ACCESSKEY }}
             ${{ secrets.S3_SECRETKEY }}
             ${{ secrets.S3_BUCKET  }}
+            ${{ secrets.GOOGLE_ID }}
+            ${{ secrets.GOOGLE_SECRET }}
+            ${{ secrets.GOOGLE_REDIRECT_URI }}
+            
             
       - name: Copy Secret File
         env:

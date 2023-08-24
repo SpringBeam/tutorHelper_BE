@@ -1,6 +1,8 @@
 package springbeam.susukgwan.auth;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -10,6 +12,8 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import springbeam.susukgwan.auth.info.KakaoOAuth2UserInfo;
+import springbeam.susukgwan.auth.info.OAuth2UserInfo;
+import springbeam.susukgwan.auth.info.OAuth2UserInfoFactory;
 import springbeam.susukgwan.user.Provider;
 import springbeam.susukgwan.user.Role;
 import springbeam.susukgwan.user.User;
@@ -21,6 +25,7 @@ import java.util.Random;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     @Autowired
     private final UserRepository userRepository;
@@ -31,7 +36,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
         OAuth2User oAuth2User = super.loadUser(userRequest);
         try {
-            return this.process(oAuth2User);
+            return this.process(userRequest, oAuth2User);
         }
         /*
         catch (AuthenticationException e) {
@@ -44,13 +49,15 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         }
     }
 
-    private OAuth2User process(OAuth2User user) {
-        KakaoOAuth2UserInfo userInfo = new KakaoOAuth2UserInfo(user.getAttributes());
-
-        Optional<User> oldUser = userRepository.findByProviderAndSocialId(Provider.KAKAO, userInfo.getId()); // kakao & social id로 검색
+    private OAuth2User process(OAuth2UserRequest userRequest, OAuth2User user) {
+        Provider provider = Provider.valueOf(userRequest.getClientRegistration().getRegistrationId().toUpperCase());
+        log.info(userRequest.getClientRegistration().getRegistrationId().toUpperCase());
+        // KakaoOAuth2UserInfo userInfo = new KakaoOAuth2UserInfo(user.getAttributes());
+        OAuth2UserInfo userInfo = OAuth2UserInfoFactory.getOAuth2UserInfo(provider, user.getAttributes());
+        Optional<User> oldUser = userRepository.findByProviderAndSocialId(provider, userInfo.getId()); // provider & social id로 검색
         User principal;
         if (oldUser.isEmpty()) {
-            principal = createUser(userInfo);
+            principal = createUser(userInfo, provider);
         }
         else {
             principal = oldUser.get();
@@ -58,13 +65,13 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         return UserPrincipal.create(principal, user.getAttributes());
     }
 
-    private User createUser(KakaoOAuth2UserInfo userInfo) {
+    private User createUser(OAuth2UserInfo userInfo, Provider provider) {
         String randomUserId = generateRandomAlphaNumericString();
         while (userRepository.findByUserId(randomUserId).isPresent()) {
             randomUserId = generateRandomAlphaNumericString();
         }
         User user = User.builder()
-                .provider(Provider.KAKAO)
+                .provider(provider)
                 .roleType(RoleType.USER)
                 .socialId(userInfo.getId())
                 .name(userInfo.getName())
