@@ -48,9 +48,9 @@ public class PushService {
             PushRequest pushRequest = PushRequest.builder()
                     .token(fcmToken.getFcmToken()).title(title).topic(topic).body(body).build();
             sendPushNotificationToToken(pushRequest);
-            Push pushSave = Push.builder().title(title).topic(topic).body(body).receiverId(tutoring.getTutorId()).isRead(false).build();
-            pushRepository.save(pushSave);
         }
+        Push pushSave = Push.builder().title(title).topic(topic).body(body).receiverId(tutoring.getTutorId()).isRead(false).build();
+        pushRepository.save(pushSave);
     }
     // Notify tutee and parent 1. canceled schedule
     public void cancelScheduleNotification(Tutoring tutoring, LocalDate date, LocalTime startTime) {
@@ -65,9 +65,9 @@ public class PushService {
             if (tuteeTokenOptional.isPresent() && tuteeTokenOptional.get().isAlarmOn()) {
                 pushRequest.setToken(tuteeTokenOptional.get().getFcmToken());
                 sendPushNotificationToToken(pushRequest);
-                Push pushSave = Push.builder().title(title).topic(topic).body(body).receiverId(tutoring.getTuteeId()).isRead(false).build();
-                pushRepository.save(pushSave);
             }
+            Push pushSave = Push.builder().title(title).topic(topic).body(body).receiverId(tutoring.getTuteeId()).isRead(false).build();
+            pushRepository.save(pushSave);
         }
         // send to parent
         if (tutoring.getParentId()!=null) {
@@ -75,9 +75,9 @@ public class PushService {
             if (parentTokenOptional.isPresent() && parentTokenOptional.get().isAlarmOn()) {
                 pushRequest.setToken(parentTokenOptional.get().getFcmToken());
                 sendPushNotificationByTopic(pushRequest);
-                Push pushSave = Push.builder().title(title).topic(topic).body(body).receiverId(tutoring.getParentId()).isRead(false).build();
-                pushRepository.save(pushSave);
             }
+            Push pushSave = Push.builder().title(title).topic(topic).body(body).receiverId(tutoring.getParentId()).isRead(false).build();
+            pushRepository.save(pushSave);
         }
     }
     // Notify tutee and parent 2. new irregular schedule
@@ -93,9 +93,9 @@ public class PushService {
             if (tuteeTokenOptional.isPresent() && tuteeTokenOptional.get().isAlarmOn()) {
                 pushRequest.setToken(tuteeTokenOptional.get().getFcmToken());
                 sendPushNotificationToToken(pushRequest);
-                Push pushSave = Push.builder().title(title).topic(topic).body(body).receiverId(tutoring.getTuteeId()).isRead(false).build();
-                pushRepository.save(pushSave);
             }
+            Push pushSave = Push.builder().title(title).topic(topic).body(body).receiverId(tutoring.getTuteeId()).isRead(false).build();
+            pushRepository.save(pushSave);
         }
         // send to parent
         if (tutoring.getParentId()!=null) {
@@ -103,9 +103,9 @@ public class PushService {
             if (parentTokenOptional.isPresent() && parentTokenOptional.get().isAlarmOn()) {
                 pushRequest.setToken(parentTokenOptional.get().getFcmToken());
                 sendPushNotificationByTopic(pushRequest);
-                Push pushSave = Push.builder().title(title).topic(topic).body(body).receiverId(tutoring.getParentId()).isRead(false).build();
-                pushRepository.save(pushSave);
             }
+            Push pushSave = Push.builder().title(title).topic(topic).body(body).receiverId(tutoring.getParentId()).isRead(false).build();
+            pushRepository.save(pushSave);
         }
     }
     public void replaceScheduleNotification(Tutoring tutoring, ReplaceScheduleDTO replaceScheduleDTO) {
@@ -121,9 +121,9 @@ public class PushService {
             if (tuteeTokenOptional.isPresent() && tuteeTokenOptional.get().isAlarmOn()) {
                 pushRequest.setToken(tuteeTokenOptional.get().getFcmToken());
                 sendPushNotificationToToken(pushRequest);
-                Push pushSave = Push.builder().title(title).topic(topic).body(body).receiverId(tutoring.getTuteeId()).isRead(false).build();
-                pushRepository.save(pushSave);
             }
+            Push pushSave = Push.builder().title(title).topic(topic).body(body).receiverId(tutoring.getTuteeId()).isRead(false).build();
+            pushRepository.save(pushSave);
         }
         // send to parent
         if (tutoring.getParentId()!=null) {
@@ -131,9 +131,9 @@ public class PushService {
             if (parentTokenOptional.isPresent() && parentTokenOptional.get().isAlarmOn()) {
                 pushRequest.setToken(parentTokenOptional.get().getFcmToken());
                 sendPushNotificationByTopic(pushRequest);
-                Push pushSave = Push.builder().title(title).topic(topic).body(body).receiverId(tutoring.getParentId()).isRead(false).build();
-                pushRepository.save(pushSave);
             }
+            Push pushSave = Push.builder().title(title).topic(topic).body(body).receiverId(tutoring.getParentId()).isRead(false).build();
+            pushRepository.save(pushSave);
         }
     }
 
@@ -150,9 +150,9 @@ public class PushService {
             if (tuteeTokenOptional.isPresent() && tuteeTokenOptional.get().isAlarmOn()) {
                 pushRequest.setToken(tuteeTokenOptional.get().getFcmToken());
                 sendPushNotificationToToken(pushRequest);
-                Push pushSave = Push.builder().title(title).topic(topic).body(body).receiverId(tutoring.getTuteeId()).isRead(false).build();
-                pushRepository.save(pushSave);
             }
+            Push pushSave = Push.builder().title(title).topic(topic).body(body).receiverId(tutoring.getTuteeId()).isRead(false).build();
+            pushRepository.save(pushSave);
         }
         // send to parent
         if (tutoring.getParentId()!=null) {
@@ -160,9 +160,9 @@ public class PushService {
             if (parentTokenOptional.isPresent() && parentTokenOptional.get().isAlarmOn()) {
                 pushRequest.setToken(parentTokenOptional.get().getFcmToken());
                 sendPushNotificationByTopic(pushRequest);
-                Push pushSave = Push.builder().title(title).topic(topic).body(body).receiverId(tutoring.getParentId()).isRead(false).build();
-                pushRepository.save(pushSave);
             }
+            Push pushSave = Push.builder().title(title).topic(topic).body(body).receiverId(tutoring.getParentId()).isRead(false).build();
+            pushRepository.save(pushSave);
         }
     }
 
@@ -190,9 +190,9 @@ public class PushService {
             if (tutorTokenOptional.isPresent() && tutorTokenOptional.get().isAlarmOn()) {
                 pushRequest.setToken(tutorTokenOptional.get().getFcmToken());
                 sendPushNotificationByTopic(pushRequest);
-                Push pushSave = Push.builder().title(title).topic(topic).body(body).receiverId(tutorId).isRead(false).build();
-                pushRepository.save(pushSave);
             }
+            Push pushSave = Push.builder().title(title).topic(topic).body(body).receiverId(tutorId).isRead(false).build();
+            pushRepository.save(pushSave);
         }
     }
 
@@ -215,9 +215,9 @@ public class PushService {
             if (tuteeTokenOptional.isPresent() && tuteeTokenOptional.get().isAlarmOn()) {
                 pushRequest.setToken(tuteeTokenOptional.get().getFcmToken());
                 sendPushNotificationByTopic(pushRequest);
-                Push pushSave = Push.builder().title(title).topic(topic).body(body).receiverId(tuteeId).isRead(false).build();
-                pushRepository.save(pushSave);
             }
+            Push pushSave = Push.builder().title(title).topic(topic).body(body).receiverId(tuteeId).isRead(false).build();
+            pushRepository.save(pushSave);
         }
     }
 
@@ -247,9 +247,9 @@ public class PushService {
             if (tutorTokenOptional.isPresent() && tutorTokenOptional.get().isAlarmOn()) {
                 pushRequest.setToken(tutorTokenOptional.get().getFcmToken());
                 sendPushNotificationByTopic(pushRequest);
-                Push pushSave = Push.builder().title(title).topic(topic).body(body).receiverId(tutorId).isRead(false).build();
-                pushRepository.save(pushSave);
             }
+            Push pushSave = Push.builder().title(title).topic(topic).body(body).receiverId(tutorId).isRead(false).build();
+            pushRepository.save(pushSave);
         }
     }
 
@@ -279,9 +279,9 @@ public class PushService {
             if (parentTokenOptional.isPresent() && parentTokenOptional.get().isAlarmOn()) {
                 pushRequest.setToken(parentTokenOptional.get().getFcmToken());
                 sendPushNotificationByTopic(pushRequest);
-                Push pushSave = Push.builder().title(title).topic(topic).body(body).receiverId(parentId).isRead(false).build();
-                pushRepository.save(pushSave);
             }
+            Push pushSave = Push.builder().title(title).topic(topic).body(body).receiverId(parentId).isRead(false).build();
+            pushRepository.save(pushSave);
         }
     }
 
