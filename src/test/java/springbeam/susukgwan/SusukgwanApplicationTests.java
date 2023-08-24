@@ -8,9 +8,10 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 import springbeam.susukgwan.fcm.FCMService;
 import springbeam.susukgwan.fcm.PushRequest;
 import springbeam.susukgwan.schedule.ScheduleService;
@@ -43,7 +44,7 @@ class SusukgwanApplicationTests {
 
 	@Test
 	void sendNotification() {
-		PushRequest pushRequest = PushRequest.builder().title("test").topic("test").body("학교 종이 쌩쌩쌩").token("A").build();
+		PushRequest pushRequest = PushRequest.builder().title("수업시간 변경").topic("replace").body("수업의 ~").token("").build();
 		try {
 			fcmService.sendMessageToToken(pushRequest);
 			return;
