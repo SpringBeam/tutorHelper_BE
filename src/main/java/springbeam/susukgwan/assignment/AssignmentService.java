@@ -23,7 +23,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -51,9 +50,12 @@ public class AssignmentService {
             if (tutoring.get().getTutorId() != userId) { // Tutoring에 등록된 선생님과 현재유저(선생님)가 다르면 불가능
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ResponseMsg(ResponseMsgList.NOT_AUTHORIZED.getMsg()));
             }
+            Long tutorIdOfNote = noteRepository.GetTutorIdOfNote(createAssignment.getNoteId());
+            if (tutorIdOfNote != null && (userId != tutorIdOfNote)) { // 해당 수업일지를 만든 선생님만 접근가능
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ResponseMsg(ResponseMsgList.NOT_AUTHORIZED.getMsg()));
+            }
         /* End */
 
-            Optional<Note> note = noteRepository.findFirst1ByTutoringOrderByDateTimeDesc(tutoring.get());
             // 목표 제출횟수 계산
             LocalDate startDate = createAssignment.getStartDate();
             LocalDate endDate = createAssignment.getEndDate();
@@ -71,7 +73,11 @@ public class AssignmentService {
                 }
             }
 
+            Optional<Note> note = noteRepository.findById(createAssignment.getNoteId());
             if (note.isPresent()) { // 수업일지 있을 때
+                if (note.get().getTutoring() != tutoring.get()) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+                }
                 Assignment assignment = Assignment.builder()
                         .body(createAssignment.getBody())
                         .startDate(createAssignment.getStartDate())
@@ -83,32 +89,37 @@ public class AssignmentService {
                         .count(0L)
                         .goalCount(goalCount)
                         .build();
-//                assignmentRepository.save(assignment);
-                return ResponseEntity.ok(assignment);
-            } else { // 없을 때 수업 첫시작날 자정으로 수업일지 자동 생성
-                // 해당 일정 먼저 생성
-                dummyScheduleService.newDummyIrregularSchedule(tutoring.get(), tutoring.get().getStartDate());
-                Note newNote = Note.builder()
-                        .dateTime(LocalDateTime.now(ZoneId.of("Asia/Seoul")))
-                        .tutoringTime(tutoring.get().getStartDate().atTime(0,0))
-                        .tutoring(tutoring.get())
-                        .progress(".")
-                        .build();
-                Assignment assignment = Assignment.builder()
-                        .body(createAssignment.getBody())
-                        .startDate(createAssignment.getStartDate())
-                        .endDate(createAssignment.getEndDate())
-                        .frequency(createAssignment.getFrequency())
-                        .amount(createAssignment.getAmount())
-                        .isCompleted(false)
-                        .note(newNote)
-                        .count(0L)
-                        .goalCount(goalCount)
-                        .build();
-                HashMap<String, Object> map = new HashMap<String, Object>();
-                map.put("assignment", assignment);
-                map.put("note", newNote);
-                return ResponseEntity.status(HttpStatus.CREATED).body(map);
+                assignmentRepository.save(assignment);
+                return ResponseEntity.ok(assignment.getId());
+            } else {
+                Integer noteCount = tutoring.get().getNotes().size();
+                if (createAssignment.getNoteId() == 0 && noteCount == 0) { // 없을 때 수업 첫시작날 자정으로 수업일지 자동 생성
+                    dummyScheduleService.newDummyIrregularSchedule(tutoring.get(), tutoring.get().getStartDate());
+                    Note newNote = Note.builder()
+                            .dateTime(LocalDateTime.now(ZoneId.of("Asia/Seoul")))
+                            .tutoringTime(tutoring.get().getStartDate().atTime(0,0))
+                            .tutoring(tutoring.get())
+                            .progress(".")
+                            .build();
+                    Assignment assignment = Assignment.builder()
+                            .body(createAssignment.getBody())
+                            .startDate(createAssignment.getStartDate())
+                            .endDate(createAssignment.getEndDate())
+                            .frequency(createAssignment.getFrequency())
+                            .amount(createAssignment.getAmount())
+                            .isCompleted(false)
+                            .note(newNote)
+                            .count(0L)
+                            .goalCount(goalCount)
+                            .build();
+                    noteRepository.save(newNote);
+                    assignmentRepository.save(assignment);
+                    return ResponseEntity.ok(assignment.getId());
+                } else if (createAssignment.getNoteId() != 0) {
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_NOTE.getMsg()));
+                } else { // 그냥안됨
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+                }
             }
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_TUTORING.getMsg()));

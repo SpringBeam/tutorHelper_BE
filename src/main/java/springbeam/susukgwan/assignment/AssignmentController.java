@@ -2,17 +2,13 @@ package springbeam.susukgwan.assignment;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import springbeam.susukgwan.assignment.dto.AssignmentRequestDTO;
 import springbeam.susukgwan.assignment.dto.SubmitRequestDTO;
-import springbeam.susukgwan.note.Note;
-import springbeam.susukgwan.note.NoteRepository;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 
 @RestController
@@ -21,24 +17,10 @@ import java.util.List;
 public class AssignmentController {
     private final AssignmentService assignmentService;
     private final SubmitService submitService;
-    private final AssignmentRepository assignmentRepository;
-    private final NoteRepository noteRepository;
 
     @PostMapping("")
     public ResponseEntity<?> createAssignment (@Valid @RequestBody AssignmentRequestDTO.Create createAssignment) {
-        ResponseEntity result = assignmentService.createAssignment(createAssignment);
-        if (result.getStatusCode() == HttpStatus.OK) {
-            Assignment assignment = (Assignment) result.getBody();
-            assignmentRepository.save(assignment); // DB에 저장
-            return ResponseEntity.ok(assignment.getId()); // 성공일때는 body 빼고 ID만 넣고 다시 반환
-        } else if (result.getStatusCode() == HttpStatus.CREATED) {
-            Assignment assignment = (Assignment) (((HashMap<String, Object>) result.getBody()).get("assignment"));
-            Note note = (Note)(((HashMap<String, Object>) result.getBody()).get("note"));
-            noteRepository.save(note);
-            assignmentRepository.save(assignment);
-            return ResponseEntity.ok(assignment.getId());
-        }
-        return result; // 오류코드일때는 그대로 반환
+        return assignmentService.createAssignment(createAssignment);
     }
 
     @PutMapping("/{assignmentId}")

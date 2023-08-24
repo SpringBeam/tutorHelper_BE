@@ -21,7 +21,6 @@ import springbeam.susukgwan.tutoring.TutoringRepository;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -41,6 +40,7 @@ public class ReviewService {
 
         Optional<Tutoring> tutoring = tutoringRepository.findById(createReview.getTutoringId());
         Optional<Tag> tag = tagRepository.findById(createReview.getTagId());
+        Optional<Note> note = noteRepository.findById(createReview.getNoteId());
 
         Long userId = Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
         if (tutoring.isPresent() && tutoring.get().getTutorId() != userId) { // 해당 수업의 선생님만 접근가능
@@ -50,40 +50,48 @@ public class ReviewService {
         if (tutorIdOfTag != null && (userId != tutorIdOfTag)) { // 해당 태그를 만든 선생님만 접근가능
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ResponseMsg(ResponseMsgList.NOT_AUTHORIZED.getMsg()));
         }
+        Long tutorIdOfNote = noteRepository.GetTutorIdOfNote(createReview.getNoteId());
+        if (tutorIdOfNote != null && (userId != tutorIdOfNote)) { // 해당 수업일지를 만든 선생님만 접근가능
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ResponseMsg(ResponseMsgList.NOT_AUTHORIZED.getMsg()));
+        }
 
         if (tutoring.isPresent() && tag.isPresent()) {
-            Optional<Note> note = noteRepository.findFirst1ByTutoringOrderByDateTimeDesc(tutoring.get());
-            if (note.isPresent()) {
+            if (note.isPresent()) { // 존재하는 노트
+                if (note.get().getTutoring() != tutoring.get()) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+                }
                 Review review = Review.builder()
                         .body(createReview.getBody())
                         .isCompleted(false)
                         .note(note.get())
                         .tag(tag.get())
                         .build();
-//                reviewRepository.save(review);
-                return ResponseEntity.ok(review);
-            } else {
-                // 수업일지가 하나도 존재하지 않는다면 수업 첫시작날 자정으로 수업일지 자동 생성
-                // 해당 일정 먼저 생성
-                dummyScheduleService.newDummyIrregularSchedule(tutoring.get(), tutoring.get().getStartDate());
-                Note newNote = Note.builder()
-                        .dateTime(LocalDateTime.now(ZoneId.of("Asia/Seoul")))
-                        .tutoringTime(tutoring.get().getStartDate().atTime(0,0))
-                        .tutoring(tutoring.get())
-                        .progress(".")
-                        .build();
-//                noteRepository.save(newNote);
-                Review review = Review.builder()
-                        .body(createReview.getBody())
-                        .isCompleted(false)
-                        .note(newNote)
-                        .tag(tag.get())
-                        .build();
-                HashMap<String, Object> map = new HashMap<String, Object>();
-                map.put("review", review);
-                map.put("note", newNote);
-                return ResponseEntity.status(HttpStatus.CREATED).body(map);
-//                return ResponseEntity.ok(review);
+                reviewRepository.save(review);
+                return ResponseEntity.ok(review.getId());
+            } else { // 존재하지 않는 노트
+                Integer noteCount = tutoring.get().getNotes().size();
+                if (createReview.getNoteId() == 0 && noteCount == 0) { // 수업노트가 하나도 없어서 더미노트(수업 첫날 자정) 생성하는 경우
+                    dummyScheduleService.newDummyIrregularSchedule(tutoring.get(), tutoring.get().getStartDate());
+                    Note newNote = Note.builder()
+                            .dateTime(LocalDateTime.now(ZoneId.of("Asia/Seoul")))
+                            .tutoringTime(tutoring.get().getStartDate().atTime(0,0))
+                            .tutoring(tutoring.get())
+                            .progress(".")
+                            .build();
+                    Review review = Review.builder()
+                            .body(createReview.getBody())
+                            .isCompleted(false)
+                            .note(newNote)
+                            .tag(tag.get())
+                            .build();
+                    noteRepository.save(newNote);
+                    reviewRepository.save(review);
+                    return ResponseEntity.ok(review.getId());
+                } else if (createReview.getNoteId() != 0) {
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_NOTE.getMsg()));
+                } else { // 수업일지가 이미 있는데 더미노트 생성을 위한 0을 보낸 경우 (그냥안됨)
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+                }
             }
         } else if (tutoring.isPresent() && tag.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_TAG.getMsg()));
