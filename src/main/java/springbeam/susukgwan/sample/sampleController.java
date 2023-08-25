@@ -9,10 +9,10 @@ public class sampleController {
     @Value("${logging-module.version}")
     private String version;
 
-    @GetMapping("/")
-    public String version() {
-        return String.format("Project version: %s", version);
-    }
+//    @GetMapping("/")
+//    public String version() {
+//        return String.format("Project version: %s", version);
+//    }
 
     @GetMapping("/health")
     public String checkHealth() {
