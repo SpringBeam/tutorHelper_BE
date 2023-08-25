@@ -25,6 +25,8 @@ public class AssignmentRequestDTO {
         private List<Long> frequency;
         @NotNull
         private String amount; // 빈칸 가능
+        @NotNull
+        private Long noteId;
     }
 
     @Getter

@@ -17,6 +17,8 @@ public class ReviewRequestDTO { /* Review 요청 DTO 모음 */
         private String body;
         @NotNull
         private Long tagId;
+        @NotNull
+        private Long noteId;
     }
 
     @Getter

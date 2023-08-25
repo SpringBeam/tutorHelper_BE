@@ -2,38 +2,19 @@ package springbeam.susukgwan.review;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import springbeam.susukgwan.note.Note;
-import springbeam.susukgwan.note.NoteRepository;
 import springbeam.susukgwan.review.dto.ReviewRequestDTO;
-
-import java.util.HashMap;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/review")
 public class ReviewController {
     private final ReviewService reviewService;
-    private final ReviewRepository reviewRepository;
-    private final NoteRepository noteRepository;
 
     @PostMapping("")
     public ResponseEntity<?> createReview (@Valid @RequestBody ReviewRequestDTO.Create createReview){
-        ResponseEntity result = reviewService.createReview(createReview);
-        if (result.getStatusCode() == HttpStatus.OK) {
-            Review review = (Review) result.getBody();
-            reviewRepository.save(review); // DB에 저장
-            return ResponseEntity.ok(review.getId()); // 성공일때는 body 빼고 ID만 넣고 다시 반환
-        } else if (result.getStatusCode() == HttpStatus.CREATED) { // 수업일지도 같이 생성
-            Review review = (Review)(((HashMap<String, Object>) result.getBody()).get("review"));
-            Note note = (Note)(((HashMap<String, Object>) result.getBody()).get("note"));
-            noteRepository.save(note);
-            reviewRepository.save(review);
-            return ResponseEntity.ok(review.getId());
-        }
-        return result; // 오류코드일때는 그대로 반환
+        return reviewService.createReview(createReview);
     }
 
     @PutMapping("/{reviewId}")

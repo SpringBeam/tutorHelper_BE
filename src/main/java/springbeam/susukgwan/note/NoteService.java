@@ -3,7 +3,6 @@ package springbeam.susukgwan.note;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -17,11 +16,11 @@ import springbeam.susukgwan.note.dto.NoteRequestDTO;
 import springbeam.susukgwan.note.dto.NoteResponseDTO;
 import springbeam.susukgwan.review.Review;
 import springbeam.susukgwan.review.ReviewRepository;
-import springbeam.susukgwan.review.ReviewService;
 import springbeam.susukgwan.review.dto.ReviewRequestDTO;
 import springbeam.susukgwan.schedule.Cancellation;
 import springbeam.susukgwan.schedule.Irregular;
 import springbeam.susukgwan.schedule.Time;
+import springbeam.susukgwan.tag.Tag;
 import springbeam.susukgwan.tag.TagRepository;
 import springbeam.susukgwan.tutoring.Tutoring;
 import springbeam.susukgwan.tutoring.TutoringRepository;
@@ -38,7 +37,6 @@ import java.util.stream.Collectors;
 public class NoteService {
     private final NoteRepository noteRepository;
     private final TutoringRepository tutoringRepository;
-    private final ReviewService reviewService;
     private final AssignmentService assignmentService;
     private final ReviewRepository reviewRepository;
     private final TagRepository tagRepository;
@@ -50,11 +48,11 @@ public class NoteService {
     /* 수업일지 추가 */
     public ResponseEntity<?> createNote (NoteRequestDTO.Create createNote) {
         // tutoring 존재여부 확인
+        Long userId = Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
         Optional<Tutoring> tutoringOptional = tutoringRepository.findById(createNote.getTutoringId());
         if (tutoringOptional.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_TUTORING.getMsg()));
         } else { // tutoring 존재는 하는데
-            Long userId = Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
             if (tutoringOptional.get().getTutorId() != userId) { // 내 수업이 아닐때
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ResponseMsg(ResponseMsgList.NOT_AUTHORIZED.getMsg()));
             }
@@ -151,23 +149,26 @@ public class NoteService {
                 }
                 // validation 검사 끝
 
-                r.setTutoringId(createNote.getTutoringId()); // 요청에 tutoringId 추가
+                // tag 검사
+                Optional<Tag> tag = tagRepository.findById(r.getTagId());
+                Long tutorIdOfTag = tagRepository.GetTutorIdOfTag(r.getTagId());
+                if (tag.isEmpty()) { // 존재하지 않는 태그
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMsg(ResponseMsgList.NOT_EXIST_TAG.getMsg()));
+                }
+                if (tutorIdOfTag != null && (userId != tutorIdOfTag)) { // 해당 태그를 만든 선생님만 접근가능
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ResponseMsg(ResponseMsgList.NOT_AUTHORIZED.getMsg()));
+                }
+                // tag 검사 끝
 
-                ResponseEntity createReviewResponse = reviewService.createReview(r); // review 생성
-                HttpStatusCode statusCode = createReviewResponse.getStatusCode();
-                if (statusCode == HttpStatus.OK) { // 정상 생성 가능
-                    Review savedReview = (Review) createReviewResponse.getBody();
-                    savedReview.setNote(note);
-                    createReviewList.add(savedReview); // 추가 -> 나중에 리스트 한번에 저장
-                }
-                else if (statusCode == HttpStatus.CREATED) { // 정상 생성 가능 but 수업일지가 하나도 없었어서 같이 넘어옴
-                    Review savedReview = (Review)(((HashMap<String, Object>) createReviewResponse.getBody()).get("review"));
-                    savedReview.setNote(note);
-                    createReviewList.add(savedReview);
-                }
-                else { // 불가능 (종료)
-                    return createReviewResponse;
-                }
+                // review 생성
+                Review review = Review.builder()
+                        .body(r.getBody())
+                        .isCompleted(false)
+                        .note(note)
+                        .tag(tag.get())
+                        .build();
+                createReviewList.add(review);
+                // review 생성 끝
             }
         }
 
@@ -197,22 +198,36 @@ public class NoteService {
                 }
                 // validation 검사 끝
 
-                a.setTutoringId(createNote.getTutoringId()); // 요청에 tutoringId 추가
-                ResponseEntity createAssignmentResponse = assignmentService.createAssignment(a); // assignment 생성
-                HttpStatusCode statusCode2 = createAssignmentResponse.getStatusCode();
-                if (statusCode2 == HttpStatus.OK) { // 정상 생성 가능
-                    Assignment savedAssignment = (Assignment) createAssignmentResponse.getBody();
-                    savedAssignment.setNote(note);
-                    createAssignmentList.add(savedAssignment); // 추가 -> 나중에 리스트 한번에 저장
+                // assignment 생성
+                LocalDate startDate = a.getStartDate();
+                LocalDate endDate = a.getEndDate();
+                List<LocalDate> dateList = startDate.datesUntil(endDate.plusDays(1)).collect(Collectors.toList());
+                Long goalCount = 0L;
+
+                if (a.getFrequency().isEmpty()) {
+                    goalCount = 1L;
                 }
-                else if (statusCode2 == HttpStatus.CREATED) { // 정상 생성 가능 but 수업일지가 하나도 없었어서 같이 넘어옴
-                    Assignment savedAssignment = (Assignment) (((HashMap<String, Object>) createAssignmentResponse.getBody()).get("assignment"));
-                    savedAssignment.setNote(note);
-                    createAssignmentList.add(savedAssignment); // 추가 -> 나중에 리스트 한번에 저장
+                else {
+                    for (LocalDate d : dateList) {
+                        if (a.getFrequency().contains(Long.valueOf(d.getDayOfWeek().getValue()))) {
+                            goalCount += 1;
+                        }
+                    }
                 }
-                else { // 불가능 (종료)
-                    return createAssignmentResponse;
-                }
+
+                Assignment assignment = Assignment.builder()
+                        .body(a.getBody())
+                        .startDate(startDate)
+                        .endDate(endDate)
+                        .frequency(a.getFrequency())
+                        .amount(a.getAmount())
+                        .isCompleted(false)
+                        .note(note)
+                        .count(0L)
+                        .goalCount(goalCount)
+                        .build();
+                createAssignmentList.add(assignment);
+                // assignment 생성 끝
             }
         }
 
