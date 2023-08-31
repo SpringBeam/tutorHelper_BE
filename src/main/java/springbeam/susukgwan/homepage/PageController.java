@@ -13,4 +13,8 @@ public class PageController {
     public String redirectionPage() {
         return "redirection";
     }
+    @GetMapping("/privacy-policy")
+    public String privacyPolicyPage() {
+        return "privacy_policy";
+    }
 }

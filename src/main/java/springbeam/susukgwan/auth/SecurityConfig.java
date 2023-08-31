@@ -66,7 +66,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.OPTIONS).permitAll() // CORS preflight 막기
                 .requestMatchers("/").permitAll()
                 .requestMatchers("/images/**").permitAll()
-                .requestMatchers("/redirect").permitAll()
+                .requestMatchers("/redirect", "/privacy-policy").permitAll()
                 .requestMatchers("/health").permitAll()
                 .requestMatchers("/login/**", "/oauth2/**", "/error").permitAll()
                 .requestMatchers("/api/auth/signup", "/api/auth/login").permitAll()
