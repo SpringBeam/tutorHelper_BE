@@ -14,6 +14,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import springbeam.susukgwan.assignment.AssignmentRepository;
+import springbeam.susukgwan.tutoring.Tutoring;
+import springbeam.susukgwan.tutoring.TutoringRepository;
 
 import java.io.IOException;
 import java.net.URL;
@@ -31,6 +33,7 @@ public class S3Service {
 
     private final AmazonS3 amazonS3;
     private final AssignmentRepository assignmentRepository;
+    private final TutoringRepository tutoringRepository;
 
     /* 파일 업로드 */
     public String upload(MultipartFile multipartFile, String s3FileName) throws IOException {
@@ -97,5 +100,52 @@ public class S3Service {
                         .withCannedAcl(CannedAccessControlList.PublicRead)
         );
         return URLDecoder.decode(amazonS3.getUrl(bucket, s3FileName).toString(), "utf-8"); // url에 한글&특수문자가 포함되어있을 경우 깨짐 방지
+    }
+
+    /* 프로필사진 가져오기 */
+    public String getProfilePresignedURL (String keyName) {
+        String preSignedURL = "";
+
+        Long userId = Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
+        Long fileUserId = Long.parseLong(keyName.substring(keyName.indexOf("-")+1, keyName.indexOf(".")));
+
+        List<Long> allUserId = new ArrayList<>();
+        List<Tutoring> tutoringByTutor = tutoringRepository.findAllByTutorId(fileUserId);
+        List<Tutoring> tutoringByTutee = tutoringRepository.findAllByTuteeId(fileUserId);
+        List<Tutoring> tutoringByParent = tutoringRepository.findAllByParentId(fileUserId);
+
+        for (Tutoring t : tutoringByTutor) {
+            allUserId.add(t.getTuteeId());
+            allUserId.add(t.getParentId());
+        }
+
+        for (Tutoring t : tutoringByTutee) {
+            allUserId.add(t.getTutorId());
+            allUserId.add(t.getParentId());
+        }
+
+        for (Tutoring t : tutoringByParent) {
+            allUserId.add(t.getTutorId());
+            allUserId.add(t.getTuteeId());
+        }
+
+        if (allUserId.contains(userId)) { // 접근권한이 있는 사람이면
+            Date expiration = new Date();
+            Long expTimeMillis = expiration.getTime();
+            expTimeMillis += 1000 * 60 * 60 * 24; // 만료기한 하루
+            expiration.setTime(expTimeMillis);
+
+            try {
+                GeneratePresignedUrlRequest generatePresignedUrlRequest = new GeneratePresignedUrlRequest(bucket, keyName)
+                        .withMethod(HttpMethod.GET)
+                        .withExpiration(expiration);
+                URL url = amazonS3.generatePresignedUrl(generatePresignedUrlRequest);
+                preSignedURL = url.toString();
+            } catch (Exception e) {
+                log.error(e.toString());
+            }
+        }
+
+        return preSignedURL;
     }
 }
