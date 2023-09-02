@@ -114,7 +114,7 @@ public class UserService {
             String originalFilename = multipartFile.getOriginalFilename();
             String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
             String fileName = "profile/profileImg-" + userId + extension;
-            s3Service.uploadPublic(multipartFile, fileName);
+            s3Service.upload(multipartFile, fileName);
             user.setProfileImg(fileName);
             userRepository.save(user);
             return ResponseEntity.ok().build();
@@ -144,7 +144,7 @@ public class UserService {
         if (userOptional.isPresent()) {
             User user = userOptional.get();
             if (user.getProfileImg() != null) {
-                String url = s3Service.getPublicURL(user.getProfileImg());
+                String url = s3Service.getProfilePresignedURL(user.getProfileImg());
                 return ResponseEntity.ok(url);
             } else {
                 log.error("here comes");
