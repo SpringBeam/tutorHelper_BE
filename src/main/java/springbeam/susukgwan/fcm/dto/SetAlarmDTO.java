@@ -8,5 +8,5 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 public class SetAlarmDTO {
-    private String isAlarmOn;
+    private boolean isAlarmOn;
 }
