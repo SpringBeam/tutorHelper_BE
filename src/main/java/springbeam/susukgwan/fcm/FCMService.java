@@ -53,7 +53,7 @@ public class FCMService {
         return ResponseEntity.ok().build();
     }
 
-    public ResponseEntity<?> setAlarmState(boolean isAlarmOn) {
+    public ResponseEntity<?> setAlarmState(Boolean isAlarmOn) {
         String userIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
         Long userId = Long.parseLong(userIdStr);
         Optional<User> userOptional = userRepository.findById(userId);

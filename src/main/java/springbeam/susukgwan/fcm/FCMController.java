@@ -24,7 +24,7 @@ public class FCMController {
     }
     @PatchMapping("/alarm")
     public ResponseEntity setAlarmState(@RequestBody SetAlarmDTO setAlarmDTO) {
-        return fcmService.setAlarmState(setAlarmDTO.isAlarmOn());
+        return fcmService.setAlarmState(setAlarmDTO.getIsAlarmOn());
     }
     @GetMapping("/read")
     public ResponseEntity readAllAlarm() {
