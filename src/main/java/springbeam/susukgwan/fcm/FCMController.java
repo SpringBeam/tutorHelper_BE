@@ -38,4 +38,8 @@ public class FCMController {
     public ResponseEntity getAlarmState() {
         return fcmService.getAlarmState();
     }
+    @GetMapping("/alarm/new")
+    public ResponseEntity checkNewAlarm() {
+        return fcmService.checkNewAlarm();
+    }
 }

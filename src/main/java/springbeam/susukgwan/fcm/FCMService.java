@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import springbeam.susukgwan.ResponseMsg;
 import springbeam.susukgwan.ResponseMsgList;
 import springbeam.susukgwan.fcm.dto.GetAlarmStateDTO;
+import springbeam.susukgwan.fcm.dto.NewAlarmDTO;
 import springbeam.susukgwan.fcm.dto.PushListDTO;
 import springbeam.susukgwan.user.User;
 import springbeam.susukgwan.user.UserRepository;
@@ -52,6 +53,8 @@ public class FCMService {
         }
         return ResponseEntity.ok().build();
     }
+
+
 
     public ResponseEntity<?> setAlarmState(Boolean isAlarmOn) {
         String userIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -120,6 +123,23 @@ public class FCMService {
         List<Push> pushList = pushRepository.findAllByReceiverId(userId);
         PushListDTO pushListDTO = PushListDTO.builder().pushList(pushList).build();
         return ResponseEntity.ok().body(pushListDTO);
+    }
+    public ResponseEntity<?> checkNewAlarm() {
+        String userIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
+        Long userId = Long.parseLong(userIdStr);
+        Optional<User> userOptional = userRepository.findById(userId);
+        if (userOptional.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(new ResponseMsg(ResponseMsgList.NO_SUCH_USER_IN_DB.getMsg()));
+        }
+        List<Push> pushList = pushRepository.findAllByReceiverIdAndIsRead(userId, false);
+        NewAlarmDTO newAlarmDTO = NewAlarmDTO.builder().build();
+        if (pushList.isEmpty()) {
+            newAlarmDTO.setNewAlarm(false);
+        }
+        else {
+            newAlarmDTO.setNewAlarm(true);
+        }
+        return ResponseEntity.ok().body(newAlarmDTO);
     }
 
     public ResponseEntity<?> testFCMAlarm() {
