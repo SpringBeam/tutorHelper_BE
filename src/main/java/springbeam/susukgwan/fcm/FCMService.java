@@ -11,6 +11,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import springbeam.susukgwan.ResponseMsg;
 import springbeam.susukgwan.ResponseMsgList;
+import springbeam.susukgwan.fcm.dto.GetAlarmStateDTO;
 import springbeam.susukgwan.fcm.dto.PushListDTO;
 import springbeam.susukgwan.user.User;
 import springbeam.susukgwan.user.UserRepository;
@@ -52,7 +53,7 @@ public class FCMService {
         return ResponseEntity.ok().build();
     }
 
-    public ResponseEntity<?> setAlarmState(String isAlarmOn) {
+    public ResponseEntity<?> setAlarmState(boolean isAlarmOn) {
         String userIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
         Long userId = Long.parseLong(userIdStr);
         Optional<User> userOptional = userRepository.findById(userId);
@@ -64,19 +65,36 @@ public class FCMService {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(new ResponseMsg(ResponseMsgList.NO_FCM_TOKEN_ISSUED.getMsg()));
         }
         FCMToken fcmToken = fcmTokenOptional.get();
-        if (isAlarmOn.equals("ON")) {
-            fcmToken.setAlarmOn(true);
-            fcmTokenRepository.save(fcmToken);
-            return ResponseEntity.ok().build();
-        }
-        else if (isAlarmOn.equals("OFF")) {
-            fcmToken.setAlarmOn(false);
-            fcmTokenRepository.save(fcmToken);
-            return ResponseEntity.ok().build();
-        }
-        else return ResponseEntity.badRequest().build();
+//        if (isAlarmOn.equals("ON")) {
+//            fcmToken.setAlarmOn(true);
+//            fcmTokenRepository.save(fcmToken);
+//            return ResponseEntity.ok().build();
+//        }
+//        else if (isAlarmOn.equals("OFF")) {
+//            fcmToken.setAlarmOn(false);
+//            fcmTokenRepository.save(fcmToken);
+//            return ResponseEntity.ok().build();
+//        }
+//        else return ResponseEntity.badRequest().build();
+        fcmToken.setAlarmOn(!isAlarmOn);
+        fcmTokenRepository.save(fcmToken);
+        return ResponseEntity.ok().build();
     }
-
+    public ResponseEntity<?> getAlarmState() {
+        String userIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
+        Long userId = Long.parseLong(userIdStr);
+        Optional<User> userOptional = userRepository.findById(userId);
+        if (userOptional.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(new ResponseMsg(ResponseMsgList.NO_SUCH_USER_IN_DB.getMsg()));
+        }
+        Optional<FCMToken> fcmTokenOptional = fcmTokenRepository.findByUserId(userId);
+        if (fcmTokenOptional.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(new ResponseMsg(ResponseMsgList.NO_FCM_TOKEN_ISSUED.getMsg()));
+        }
+        FCMToken fcmToken = fcmTokenOptional.get();
+        GetAlarmStateDTO getAlarmStateDTO = GetAlarmStateDTO.builder().isAlarmOn(fcmToken.isAlarmOn).build();
+        return ResponseEntity.ok().body(getAlarmStateDTO);
+    }
     public ResponseEntity<?> readAllAlarm() {
         String userIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
         Long userId = Long.parseLong(userIdStr);

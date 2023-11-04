@@ -23,8 +23,8 @@ public class FCMController {
         return fcmService.testFCMAlarm();
     }
     @PatchMapping("/alarm")
-    public ResponseEntity setAlarmState(@RequestBody SetAlarmDTO setAlarmDTO) {
-        return fcmService.setAlarmState(setAlarmDTO.getIsAlarmOn());
+    public ResponseEntity setAlarmState(@RequestBody boolean isAlarmOn) {
+        return fcmService.setAlarmState(isAlarmOn);
     }
     @GetMapping("/read")
     public ResponseEntity readAllAlarm() {
@@ -33,5 +33,9 @@ public class FCMController {
     @GetMapping("/push/list")
     public ResponseEntity getPushList() {
         return fcmService.getPushList();
+    }
+    @GetMapping("/alarm")
+    public ResponseEntity getAlarmState() {
+        return fcmService.getAlarmState();
     }
 }
