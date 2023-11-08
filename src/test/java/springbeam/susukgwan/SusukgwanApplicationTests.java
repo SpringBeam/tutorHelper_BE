@@ -44,7 +44,8 @@ class SusukgwanApplicationTests {
 
 	@Test
 	void sendNotification() {
-		PushRequest pushRequest = PushRequest.builder().title("수업시간 변경").topic("replace").body("수업의 ~").token("").build();
+		PushRequest pushRequest = PushRequest.builder().title("a").topic("b").body("c")
+				.token("d").build();
 		try {
 			fcmService.sendMessageToToken(pushRequest);
 			return;

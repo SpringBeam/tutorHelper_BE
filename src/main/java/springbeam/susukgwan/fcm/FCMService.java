@@ -43,7 +43,7 @@ public class FCMService {
         }
         Optional<FCMToken> fcmTokenOptional = fcmTokenRepository.findByUserId(userId);
         if (fcmTokenOptional.isEmpty()) {
-            FCMToken newToken = FCMToken.builder().fcmToken(fcmToken).userId(userId).isAlarmOn(false).build();
+            FCMToken newToken = FCMToken.builder().fcmToken(fcmToken).userId(userId).isAlarmOn(true).build();
             fcmTokenRepository.save(newToken);
         }
         else {
