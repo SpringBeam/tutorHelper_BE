@@ -44,8 +44,8 @@ class SusukgwanApplicationTests {
 
 	@Test
 	void sendNotification() {
-		PushRequest pushRequest = PushRequest.builder().title("아아 ㅋㅋㅋㅋㅋ ").topic("된다").body("하하하")
-				.token("c5DcNXdrRSC5vHea45d6UO:APA91bGTNOkkipQKP8iyGTC9nsSjo1WqPw86wt0Y5A5hJqUigNV45FyybOQG9r2kE6dqJ6i2hlC-294DN6KF48uy2-RtDunGRC7IT7ckG3GjuskmYNpRulurxLtqR_RVNR60qRx_vK9z").build();
+		PushRequest pushRequest = PushRequest.builder().title("a").topic("b").body("c")
+				.token("d").build();
 		try {
 			fcmService.sendMessageToToken(pushRequest);
 			return;
