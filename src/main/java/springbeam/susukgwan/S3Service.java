@@ -129,7 +129,7 @@ public class S3Service {
             allUserId.add(t.getTuteeId());
         }
 
-        if (allUserId.contains(userId)) { // 접근권한이 있는 사람이면
+        if (allUserId.contains(userId) || userId == fileUserId) { // 접근권한이 있는 사람이면
             Date expiration = new Date();
             Long expTimeMillis = expiration.getTime();
             expTimeMillis += 1000 * 60 * 60 * 24; // 만료기한 하루

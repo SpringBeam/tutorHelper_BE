@@ -145,6 +145,9 @@ public class UserService {
             User user = userOptional.get();
             if (user.getProfileImg() != null) {
                 String url = s3Service.getProfilePresignedURL(user.getProfileImg());
+                if (url.isBlank()) {
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ResponseMsg(ResponseMsgList.NOT_AUTHORIZED.getMsg()));
+                }
                 return ResponseEntity.ok(url);
             } else {
                 log.error("here comes");
