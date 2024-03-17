@@ -1,6 +1,13 @@
 # 수숙관(수업숙제관리) 프로젝트
 
-### 
+## 프로젝트 목적
+진도, 숙제, 복습, 일정 관리 등의 과외 불편을 해결하는 앱을 만들자!
+
+### 구현 화면
+<img src="https://private-user-images.githubusercontent.com/81875115/313500330-de902e8f-9b34-404d-8b47-dca4b814a3b9.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTA3MDQwOTksIm5iZiI6MTcxMDcwMzc5OSwicGF0aCI6Ii84MTg3NTExNS8zMTM1MDAzMzAtZGU5MDJlOGYtOWIzNC00MDRkLThiNDctZGNhNGI4MTRhM2I5LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDAzMTclMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwMzE3VDE5Mjk1OVomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTUzNDhiMzgxNGVkMDU1YWUxMTZjNDRjZDU0ODExYjc4YmYyOWQ4ZDhjYTM4NGVmNmRhMDZlNTcyNWExMjE2YWImWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.yPg8EVjrew68ztDqq7AyRbJtCQF5kl2c-h63UYB7RME"/>
 
 ### API 명세 스프레드시트
 https://docs.google.com/spreadsheets/d/1bqTQTby8VNtMpnf4Xz8vV4hBCVZnjJp29MGCjeyQc9A/edit#gid=0
+
+### 구글플레이 링크
+https://play.google.com/store/apps/details?id=com.springbeam.susukgwan&hl=ko-KR
